@@ -1,5 +1,5 @@
 
-<p align="center"><img src="docs/images/pyELDQM_logo_v0.1.png" alt="pyELDQM logo" width="320" /></p>
+<p align="center"><img src="docs/images/pyELDQM_logo_v0.1.png" alt="pyELDQM logo" width="100%" style="max-width: 1200px; height: auto;" /></p>
 
 [![CI](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml/badge.svg)](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
