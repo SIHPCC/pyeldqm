@@ -11,6 +11,15 @@ It provides Gaussian plume / puff dispersion, dense-gas (Britter-McQuaid), fire 
 consequence models, PAR (Protective Action Recommendation) analysis, evacuation route
 optimisation, and an interactive Dash web application — all in pure Python.
 
+**Author:** Dr. Zohaib Atiq Khan
+
+**Other Contributors:**
+- Dr. Muhammad Imran Rashid
+- Mr. Muhammad Ahmad
+- Ms. Aroosa Dilbar
+- Mr. Muhammad Saleem Akhtar
+- Ms. Fatima
+
 ---
 
 ## Features
@@ -45,6 +54,17 @@ pyeldqm-env\Scripts\activate
 source pyeldqm-env/bin/activate
 
 # 2. Install pyELDQM
+pip install pyeldqm
+```
+
+### Conda installation (local build)
+
+```bash
+# 1. Create and activate a conda environment
+conda create -n pyeldqm python=3.10
+conda activate pyeldqm
+
+# 2. Install pyELDQM with pip inside the conda environment
 pip install pyeldqm
 ```
 
