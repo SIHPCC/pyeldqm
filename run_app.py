@@ -24,7 +24,7 @@ from app.server import app  # noqa: E402 — intentional late import after path 
 def main() -> None:
     """Console-script entry point (``pyeldqm-app``)."""  # noqa: D401
     port = int(os.environ.get("PORT", 8050))
-    debug = os.environ.get("DEBUG", "true").lower() not in ("false", "0", "no")
+    debug = os.environ.get("DEBUG", "false").lower() not in ("false", "0", "no")
     host = os.environ.get("HOST", "localhost")
     auto_open = os.environ.get("AUTO_OPEN_BROWSER", "true").lower() not in (
         "false",

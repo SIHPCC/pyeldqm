@@ -12,9 +12,9 @@ import pytz
 
 # Add parent directories to path for proper imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
+project_root = os.path.dirname(os.path.dirname(current_dir))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Import geographic helper from core.geography
 from core.geography import ( 
@@ -377,7 +377,7 @@ for key, value in facility_data.items():
     print(f"  {key:20s}: {value}")
 
 # Save to custom location
-custom_path = Path(parent_dir) / 'data' / 'geographic_data' / 'facility_karachi.json'
+custom_path = Path(project_root) / 'data' / 'geographic_data' / 'facility_karachi.json'
 success = save_geographic_data(facility_data, path=custom_path)
 
 if success:

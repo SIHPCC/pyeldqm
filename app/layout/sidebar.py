@@ -99,10 +99,17 @@ def create_threat_zones_sidebar(
                     ),
                     dbc.Button("Browse", id="par-browse-raster-btn", color="secondary", outline=True),
                 ], style={"marginBottom": "0.35rem"}),
-                html.Small(
-                    "Select the full path to a WorldPop GeoTIFF (.tif) raster for population estimation in PAR analysis.",
-                    style={"color": "#6c757d"},
-                ),
+                html.Small([
+                    "Select the full path to a WorldPop GeoTIFF (.tif) raster for population estimation in PAR analysis. ",
+                    "For 100 m resolution population rasters, download data from ",
+                    html.A(
+                        "WorldPop",
+                        href="https://www.worldpop.org/",
+                        target="_blank",
+                        rel="noopener noreferrer",
+                    ),
+                    ".",
+                ], style={"color": "#6c757d"}),
                 html.Div([
                     html.Div([
                         html.I(className="fas fa-balance-scale", style={"marginRight": "0.4rem", "fontSize": "0.85rem"}),
