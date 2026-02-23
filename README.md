@@ -105,7 +105,9 @@ Environment variables (all optional):
 ### Python API
 
 ```python
-from core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
+import pyeldqm as eldqm
+
+from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
 
 config = {
     "source": {"lat": 14.60, "lon": 121.03, "Q_gs": 1.5},
@@ -118,14 +120,18 @@ result = calculate_gaussian_dispersion(config)
 ```
 
 ```python
-from core.source_models.gas_pipeline.pipeline_leak import simulate_pipeline_leak
+import pyeldqm as eldqm
+
+from pyeldqm.core.source_models.gas_pipeline.pipeline_leak import simulate_pipeline_leak
 
 result = simulate_pipeline_leak(duration_s=600, dt=60)
 print(result["Qt"])   # mass-flow rate time-series [kg/s]
 ```
 
 ```python
-from core.health_thresholds import get_all_thresholds
+import pyeldqm as eldqm
+
+from pyeldqm.core.health_thresholds import get_all_thresholds
 
 thresholds = get_all_thresholds("ammonia")
 print(thresholds["AEGL"])   # {'AEGL-1': 30.0, 'AEGL-2': 160.0, 'AEGL-3': 1100.0}
