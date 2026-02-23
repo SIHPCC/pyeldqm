@@ -1,28 +1,10 @@
-"""
-Folium Interactive Mapping Tutorial
-====================================
+"""Folium visualization workflow.
 
-This tutorial demonstrates how to create interactive web-based maps for
-visualizing dispersion model results using Folium.
-
-What you'll learn:
-- Create interactive maps with dispersion contours
-- Overlay AEGL/ERPG hazard zones on real geography
-- Add wind direction indicators
-- Export to shareable HTML files
-- Customize map appearance and layers
-
-Use Case:
-- Emergency response planning
-- Risk communication with stakeholders
-- Training and presentation materials
-- Integration with web-based dashboards
-
-Run this file in an IDE that supports cell execution (VS Code with Python extension,
-Jupyter, or Spyder) or execute sections manually in an interactive Python session.
+Demonstrates operational map generation for dispersion outputs, including hazard
+zone overlays, wind context, and HTML export for sharing and review.
 
 Dependencies:
-    pip install folium scikit-image branca
+`folium`, `scikit-image`, `branca`.
 """
 
 import numpy as np

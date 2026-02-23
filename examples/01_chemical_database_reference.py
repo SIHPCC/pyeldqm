@@ -1,12 +1,10 @@
-"""
-Chemical Database Access Tutorial
+"""Chemical database reference workflow.
 
-This tutorial demonstrates how to use the ChemicalDatabase and ChemicalDataFrame
-classes to access and manage chemical properties. Run each cell sequentially to
-explore different database operations.
+Demonstrates production-style access patterns for `ChemicalDatabase` and
+`ChemicalDataFrame`, including lookup, search, summary, and tabular export.
 
-Run this file in an IDE that supports cell execution (VS Code with Python extension,
-Jupyter, or Spyder) or execute sections manually in an interactive Python session.
+Execution:
+Run in an IDE with cell support or execute sequentially in a Python session.
 """
 
 import sys
@@ -14,14 +12,14 @@ import os
 
 # Add parent directories to path for proper imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
+parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from pyELDQM.core.chemical_database import ChemicalDatabase
+from core.chemical_database import ChemicalDatabase
 
 try:
-    from pyELDQM.core.chemical_dataframe import ChemicalDataFrame
+    from core.chemical_dataframe import ChemicalDataFrame
     HAS_PANDAS = True
 except ImportError:
     HAS_PANDAS = False

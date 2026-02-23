@@ -1,18 +1,10 @@
-"""
-12_health_impact_threshold_zones.py
-====================================
+"""Health impact threshold zone workflow.
 
-Health Impact Threshold Zone Visualization with Live Updates
-
-Demonstrates comprehensive health impact assessment using:
-- ERPG (Emergency Response Planning Guidelines) zones
-- IDLH (Immediately Dangerous to Life or Health) threshold
-- Comparison with AEGL zones
-- Multi-threshold overlay visualization
-- Real-time weather updates or manual weather mode
+Performs multi-threshold hazard assessment using AEGL, ERPG, PAC, and IDLH
+criteria with live or manual meteorological inputs.
 
 Run:
-    python 12_health_impact_threshold_zones.py
+`python 11_health_impact_threshold_zones.py`
 """
 import os
 import sys

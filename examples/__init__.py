@@ -1,6 +1,5 @@
-"""
-pyELDQM Examples Package
+"""pyELDQM example scripts package.
 
-Contains example scripts demonstrating various components and simulations
-of the pyELDQM library.
+Contains executable reference workflows for chemical data access, meteorology,
+geographic context, dispersion simulation, and decision-support analysis.
 """

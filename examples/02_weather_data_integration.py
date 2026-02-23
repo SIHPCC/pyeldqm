@@ -1,25 +1,10 @@
-"""
-Weather Data Integration Guide for pyELDQM
+"""Weather data integration workflow.
 
-This comprehensive example demonstrates how to fetch weather data from multiple
-sources for use in pyELDQM simulations. Choose the source that best fits your
-requirements: local files, free APIs, or professional weather services.
+Demonstrates standardized weather ingestion from local files and online providers
+for dispersion and consequence modeling workflows.
 
-All methods return standardized weather parameters:
-    - wind_speed (m/s)
-    - wind_dir (degrees)
-    - temperature_K (Kelvin)
-    - humidity (0-1)
-    - pressure (Pa)
-    - source (data source identifier)
-
-Quick Start:
-    - Testing/Development:     Use 'local' or 'open_meteo'
-    - Production (USA):        Use 'noaa' with 'open_meteo' backup
-    - Production (Global):     Use 'open_meteo' with 'openweathermap' backup
-    - No Internet:             Use 'local'
-
-Run this file in an IDE that supports cell execution or interactive Python session.
+Output contract:
+`wind_speed`, `wind_dir`, `temperature_K`, `humidity`, `pressure`, and `source`.
 """
 
 import sys
@@ -28,11 +13,11 @@ from pathlib import Path
 
 # Add parent directories to path for proper imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(os.path.dirname(current_dir))
+parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from pyELDQM.core.meteorology.realtime_weather import get_weather
+from core.meteorology.realtime_weather import get_weather
 
 
 # %%

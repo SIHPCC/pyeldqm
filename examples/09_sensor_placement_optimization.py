@@ -1,37 +1,14 @@
-"""
-09_sensor_placement_optimization.py
-====================================
+"""Sensor placement optimization workflow.
 
-Sensor Placement Optimization for Chemical Detection Networks
+Evaluates boundary, coverage, population-weighted, wind-aware, and hybrid
+strategies for chemical detection network design around industrial facilities.
 
-This example demonstrates optimal placement of chemical detection sensors
-around hazardous facilities using multiple optimization strategies:
-
-✅ Boundary Placement - Early warning sensors at threat zone perimeters
-✅ Coverage Optimization - Maximum spatial coverage (grid/K-means)
-✅ Population-Weighted - Prioritize high-population areas
-✅ Wind-Aware Placement - Strategic placement based on wind patterns
-✅ Hybrid Multi-Objective - Combines multiple criteria
-
-Features:
-- Real-time threat zone analysis
-- WorldPop/GHSL population integration
-- Interactive sensor network visualization
-- Coverage metrics and performance analysis
-- Cost optimization capabilities
-
-Use Case:
-Industrial facility safety planning, emergency response network design,
-environmental monitoring system deployment.
-
-To Run:
-    python 09_sensor_placement_optimization.py
+Run:
+`python 09_sensor_placement_optimization.py`
 
 Dependencies:
-    pip install numpy shapely geopandas folium scikit-image rasterio scikit-learn
-
-Author: pyELDQM Development Team
-Date: 2026
+`numpy`, `shapely`, `geopandas`, `folium`, `scikit-image`, `rasterio`,
+`scikit-learn`.
 """
 
 # ============================================================================

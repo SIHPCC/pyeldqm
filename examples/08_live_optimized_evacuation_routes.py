@@ -1,21 +1,13 @@
-"""
-10_optimized_evacuation_routes.py
-=================================
+"""Live optimized evacuation routing workflow.
 
-LIVE Optimized evacuation routing with weather-driven updates.
-
-Features:
-- Real-time threat zone updates as weather changes
-- Display all safe roads (green), unsafe roads (red/dim)
-- Highlight optimized evacuation route (bright blue)
-- Rank multiple shelters by safest route
-- Live update loop similar to 08_live_PAR_emergency_routes.py
+Calculates risk-aware evacuation routes under dynamic threat zones and ranks
+shelters by route safety and accessibility during continuous updates.
 
 Run:
-    python 10_optimized_evacuation_routes.py
+`python 08_live_optimized_evacuation_routes.py`
 
-Optional deps:
-    pip install osmnx networkx
+Optional dependencies:
+`osmnx`, `networkx`.
 """
 import os
 import sys

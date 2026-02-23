@@ -1,24 +1,9 @@
-"""
-12_multi_source_live_PAR_analysis.py
-====================================
+"""Multi-source live population-at-risk analysis workflow.
 
-Multi-Source Dispersion with Live Population at Risk (PAR) Analysis
-using REAL Population Raster (WorldPop / GHSL)
+Runs multi-source Gaussian dispersion, extracts AEGL zones, and calculates
+combined population-at-risk exposure using geospatial raster operations.
 
-This script integrates:
-✅ Multiple continuous release sources with independent configurations
-✅ Real-time dispersion simulation (Multi-source Gaussian model)
-✅ Threat zone extraction (AEGL contours)
-✅ Real-world PAR computation using population raster clipping + summation
-✅ Manual weather override capability for user-defined conditions
-✅ Interactive Folium map with:
-   - Threat zones from all sources combined
-   - PAR population overlay
-   - Individual source markers
-   - Live summary panel with weather and PAR data
-
-Author: pyELDQM Development Team
-Date: 2026
+Outputs include integrated threat mapping, source markers, and live PAR panels.
 """
 
 # ============================================================================
@@ -96,7 +81,7 @@ class ScenarioConfig:
     # Update interval
     UPDATE_INTERVAL_SECONDS = 60
 
-    # ✅ REAL POPULATION RASTER
+    # Real population raster
     POP_RASTER_PATH = r"D:\OneDrive - UET\After PhD\Research\pyELDQM\pyELDQM\data\population\data\population\pak_pop_2026_CN_100m_R2025A_v1.tif"
 
     # ============================================================================

@@ -1,20 +1,9 @@
-"""
-07_live_PAR_worldpop.py
-=======================
+"""Live population-at-risk analysis workflow.
 
-Live Population at Risk (PAR) Analysis using REAL Population Raster (WorldPop / GHSL)
+Runs Gaussian dispersion, extracts AEGL threat zones, and computes
+population-at-risk metrics using raster clipping against WorldPop/GHSL data.
 
-This script integrates:
-✅ Real-time dispersion simulation (Gaussian model)
-✅ Threat zone extraction (AEGL contours)
-✅ Real-world PAR computation using population raster clipping + summation
-✅ Interactive Folium map with:
-   - Threat zones
-   - PAR population overlay
-   - Live summary panel
-
-Author: pyELDQM Development Team
-Date: 2026
+Outputs include map-based zone overlays, PAR summaries, and periodic updates.
 """
 
 # ============================================================================
@@ -95,7 +84,7 @@ class ScenarioConfig:
     # Update interval
     UPDATE_INTERVAL_SECONDS = 60
 
-    # ✅ REAL POPULATION RASTER
+    # Real population raster
     # Provide a local WorldPop/GHSL population count raster path
     # Example: r"D:\GIS\WorldPop\pak_ppp_2020_100m.tif"
     POP_RASTER_PATH = r"D:\OneDrive - UET\After PhD\Research\pyELDQM\pyELDQM\data\population\data\population\pak_pop_2026_CN_100m_R2025A_v1.tif"
@@ -117,7 +106,7 @@ class ScenarioConfig:
 # extract_threat_zones_from_concentration now imported from core.utils.zone_extraction
 
 # ============================================================================
-# ✅ REAL POPULATION PAR (WorldPop/GHSL Raster Clipping)
+# Real population-at-risk calculation (WorldPop/GHSL raster clipping)
 # ============================================================================
 
 class PopulationRasterPAR:

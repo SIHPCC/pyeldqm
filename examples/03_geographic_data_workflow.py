@@ -1,18 +1,7 @@
-"""
-Geographic Data Access Tutorial
+"""Geographic data workflow.
 
-This tutorial demonstrates how to use the geographic helper to fetch and manage
-geographic information for pyELDQM simulations.
-
-Geographic data needed for simulations:
-- Latitude/Longitude (for weather, solar radiation, stability class)
-- Elevation (for atmospheric calculations)
-- Timezone (for time-dependent calculations)
-- Surface roughness (for dispersion modeling)
-- Terrain type (for hazard assessment)
-
-Run this file in an IDE that supports cell execution (VS Code with Python extension,
-Jupyter, or Spyder) or execute sections manually in an interactive Python session.
+Demonstrates geocoding, reverse geocoding, timezone lookup, elevation retrieval,
+roughness estimation, and complete site metadata assembly for modeling inputs.
 """
 
 from datetime import datetime

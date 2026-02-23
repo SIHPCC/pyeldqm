@@ -1,47 +1,13 @@
-"""
-Real-time Ammonia Tank Threat Zones with Live Weather Updates
-==============================================================
+"""Real-time ammonia threat zone workflow.
 
-This example demonstrates a complete real-time monitoring system for hazardous
-gas dispersion using live weather data and continuous threat zone updates.
+Implements continuous dispersion updates using live or manual weather inputs and
+renders AEGL-based threat zones for operational monitoring.
 
-Features:
----------
-- Supports both real-time weather (Open-Meteo API) and manual weather settings
-- Calculates Gaussian dispersion with dynamic atmospheric stability
-- Generates AEGL-based threat zone contours on interactive maps
-- Auto-refreshes visualization every minute
-- Displays wind direction, meteorological conditions, and hazard zones
-
-Weather Modes:
---------------
-- Real-time mode: Fetches live weather from Open-Meteo API
-- Manual mode: Uses specified weather conditions for testing/scenarios
-
-Configuration:
---------------
-Set USE_MANUAL_WEATHER = True in ScenarioConfig for manual weather
-Set USE_MANUAL_WEATHER = False for real-time weather updates
-
-Use Case:
----------
-Emergency response planning and real-time hazard monitoring for industrial
-facilities handling toxic or flammable gases.
-
-To Run:
--------
-    python 06_realtime_ammonia_threat_zones.py
-
-To Stop:
---------
-    Press Ctrl+C in the terminal
+Run:
+`python 06_real_time_ammonia_threat_zones.py`
 
 Dependencies:
--------------
-    pip install folium scikit-image branca requests numpy
-
-Author: pyELDQM Development Team
-Date: 2026
+`folium`, `scikit-image`, `branca`, `requests`, `numpy`.
 """
 
 # ============================================================================

@@ -1,13 +1,10 @@
-"""
-Multi-Source Gaussian Dispersion + Folium Visualization
-=======================================================
+"""Multi-source Gaussian dispersion workflow.
 
-This example simulates multiple continuous release sources under a shared wind
-field, sums their Gaussian contributions on a common grid, and visualizes
-AEGL hazard zones on an interactive Folium map.
+Runs concurrent continuous-release sources on a shared grid, aggregates plume
+concentrations, and publishes AEGL zone outputs to an interactive map.
 
 Dependencies:
-    pip install folium scikit-image branca
+`folium`, `scikit-image`, `branca`.
 """
 
 import numpy as np

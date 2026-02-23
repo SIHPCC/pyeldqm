@@ -1,26 +1,10 @@
-"""
-11_shelter_in_place_analysis.py
-================================
+"""Shelter-in-place versus evacuation analysis workflow.
 
-Shelter-in-Place vs Evacuation Analysis
-
-Determines optimal protective actions based on:
-- Indoor concentration buildup models
-- Building air exchange rates
-- Distance from source
-- Exposure comparison (sheltering vs evacuation)
-
-Features:
-- Zone-by-zone protective action recommendations
-- Building type analysis (tight/leaky residential, commercial, industrial)
-- Time-dependent exposure modeling
-- Interactive map with shelter/evacuate zones
-- Real-time updates with weather changes
+Compares protective action strategies using indoor exposure modeling,
+building leakage assumptions, and time-dependent concentration projections.
 
 Run:
-    python 11_shelter_in_place_analysis.py
-
-Author: pyELDQM Development Team
+`python 10_shelter_in_place_analysis.py`
 """
 import os
 import sys
