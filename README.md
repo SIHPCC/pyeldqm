@@ -1,5 +1,9 @@
 # pyELDQM
 
+<p align="center">
+    <img src="docs/images/pyELDQM_logo_v0.1.png" alt="pyELDQM logo" width="320">
+</p>
+
 **Python-Based Real-Time Emergency Leakage and Dispersion Quantification Model**
 
 [![CI](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml/badge.svg)](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml)
