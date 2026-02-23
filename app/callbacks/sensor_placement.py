@@ -7,6 +7,8 @@ import dash
 from dash import Input, Output, State, ALL, html
 import dash_bootstrap_components as dbc
 import numpy as np
+import re
+from datetime import datetime
 
 
 def register(app):
@@ -21,7 +23,8 @@ def register(app):
          Output("sensor-network-summary", "children"),
          Output("sensor-details", "children"),
          Output("sensor-status", "children"),
-         Output("sensor-status-top", "children")],
+         Output("sensor-status-top", "children"),
+         Output("sensor-generated-script-store", "data")],
         [Input("calc-sensor-btn", "n_clicks"),
          Input("calc-sensor-btn-top", "n_clicks")],
         [State("main-tabs", "active_tab"),
@@ -59,6 +62,13 @@ def register(app):
          State({"type": "multi-height", "index": ALL}, "value")],
         prevent_initial_call=True,
     )(optimize_sensors)
+
+    app.callback(
+        Output("sensor-script-download", "data"),
+        Input("btn-download-sensor-script", "n_clicks"),
+        State("sensor-generated-script-store", "data"),
+        prevent_initial_call=True,
+    )(download_sensor_script)
 
     app.callback(
         [Output("sensor-map-container", "children", allow_duplicate=True),
@@ -101,9 +111,9 @@ def optimize_sensors(
 ):
     _NO = dash.no_update
     if active_tab != "tab-sensor-placement":
-        return [_NO] * 10
+        return [_NO] * 11
     if n_clicks is None and n_clicks_top is None:
-        return [_NO] * 10
+        return [_NO] * 11
 
     source_note = "Using Sensor Placement-specific parameters."
     if sensor_parameter_source_mode == "threat" and isinstance(threat_params_store, dict):
@@ -142,7 +152,7 @@ def optimize_sensors(
         from core.visualization import add_zone_polygons, ensure_layer_control, fit_map_to_polygons
         from core.utils.sensor_optimization import SensorPlacementOptimizer
 
-        (map_component, _, status, _, _, _, _, concentration_data) = calculate_threat_zones(
+        (map_component, _, status, _, _, _, _, concentration_data, _) = calculate_threat_zones(
             n_clicks, n_clicks_top, release_type, chemical,
             source_term_mode, terrain_roughness, receptor_height_m, weather_mode,
             datetime_mode, specific_datetime, timezone_offset_hrs,
@@ -153,7 +163,7 @@ def optimize_sensors(
 
         if not concentration_data or concentration_data is dash.no_update:
             warn = dbc.Alert("Unable to generate threat zones for sensor placement.", color="warning")
-            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn
+            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         X = np.array(concentration_data.get("X"))
         Y = np.array(concentration_data.get("Y"))
@@ -261,6 +271,72 @@ def optimize_sensors(
             f"Detection range: {detection_range:.0f} m per sensor."
         )
 
+        _sensor_script_data = _NO
+        _sensor_filename = ""
+        try:
+            from ..utils.script_generator import generate_sensor_script
+            from ..components.tabs.threat_zones import CHEMICAL_OPTIONS
+
+            _chem_props_found = CHEMICAL_OPTIONS.get(chemical, {})
+            _mw = _chem_props_found.get("molecular_weight") or _chem_props_found.get("MW") or 17.03
+
+            _multi_sources_sensor = None
+            if release_type == "multi":
+                _multi_sources_sensor = [
+                    {
+                        "lat": mlat,
+                        "lon": mlon,
+                        "name": f"Source {i + 1}",
+                        "height": float(mheight or 3.0),
+                        "rate": float(mrate or 0.0),
+                    }
+                    for i, (mlat, mlon, mrate, mheight) in enumerate(
+                        zip(multi_lats or [], multi_lons or [], multi_rates or [], multi_heights or [])
+                    )
+                    if mlat is not None and mlon is not None
+                ]
+
+            _sensor_script = generate_sensor_script(
+                chemical=chemical,
+                molecular_weight=float(_mw),
+                release_type=release_type,
+                source_term_mode=source_term_mode,
+                lat=float(lat or 0),
+                lon=float(lon or 0),
+                release_rate=float(release_rate or 0.0),
+                tank_height=float(tank_height or 3.0),
+                duration_minutes=float(duration_minutes or 30.0),
+                mass_released_kg=float(mass_released_kg or 500.0),
+                terrain_roughness=terrain_roughness or "URBAN",
+                receptor_height_m=float(receptor_height_m or 1.5),
+                weather_mode=weather_mode or "manual",
+                wind_speed=float(wind_speed or 3),
+                wind_dir=float(wind_dir or 90),
+                temperature_c=float(temp or 25),
+                humidity_pct=float(humidity or 60),
+                cloud_cover_pct=float(cloud_cover or 25),
+                timezone_offset_hrs=float(timezone_offset_hrs or 5),
+                datetime_mode=datetime_mode or "now",
+                specific_datetime=specific_datetime,
+                aegl_thresholds=thresholds or {"AEGL-1": 30, "AEGL-2": 160, "AEGL-3": 1100},
+                x_max=int(concentration_data.get("x_max", 12000)),
+                y_max=int(concentration_data.get("y_max", 4000)),
+                sensor_strategy=strategy,
+                sensor_num=int(num_sensors),
+                sensor_detection_range_m=float(detection_range),
+                sensor_min_spacing_m=float(min_spacing),
+                sensor_cost_per_sensor=float(cost_per_sensor),
+                sensor_population_raster_path=str(sensor_pop_raster_path or ""),
+                multi_sources=_multi_sources_sensor,
+            )
+
+            _chem_slug = re.sub(r"[^a-z0-9]+", "_", chemical.lower()).strip("_")[:40]
+            _sensor_filename = f"{_chem_slug}_sensor_placement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.py"
+            _sensor_script_data = {"content": _sensor_script, "filename": _sensor_filename}
+        except Exception as _sensor_sg_err:
+            import traceback
+            print(f"[sensor_script_generator] Warning: {_sensor_sg_err}\n{traceback.format_exc()}")
+
         sensor_map = html.Iframe(
             srcDoc=m._repr_html_(),
             style={"width": "100%", "height": "700px", "border": "none",
@@ -271,6 +347,13 @@ def optimize_sensors(
             html.Strong("Sensor network optimization completed."),
             html.Br(),
             html.Small(f"Strategy: {strategy.capitalize()}. {source_note}"),
+            html.Br(),
+            dbc.Button([
+                html.I(className="fas fa-file-download", style={"marginRight": "0.4rem"}),
+                f"Download Script ({_sensor_filename})" if _sensor_script_data is not _NO else "Download Script",
+            ], id="btn-download-sensor-script", color="light", size="sm",
+               style={"marginTop": "0.4rem", "fontSize": "0.82rem"},
+               disabled=(_sensor_script_data is _NO)),
         ], color="success")
 
         status_msg = dbc.Alert([
@@ -282,12 +365,21 @@ def optimize_sensors(
             sensor_map, str(len(sensors)), f"{coverage_area:.2f} km²",
             f"${total_cost:,.0f}", strategy.capitalize(),
             priority_breakdown, network_summary, detail,
-            status_msg, status_msg,
+            status_msg, status_msg, _sensor_script_data,
         )
     except Exception as exc:
         error_alert = dbc.Alert(f"Error in Sensor Placement calculation: {exc}", color="danger")
         return (dash.no_update, "---", "---", "---", "---", "---", "---",
-                error_alert, error_alert, error_alert)
+                error_alert, error_alert, error_alert, _NO)
+
+
+def download_sensor_script(n_clicks, script_data):
+    """Send the generated Sensor Placement script to the browser as a .py file download."""
+    if not n_clicks or not script_data:
+        return dash.no_update
+    content = script_data.get("content", "")
+    filename = script_data.get("filename", "sensor_placement_script.py")
+    return {"content": content, "filename": filename}
 
 
 def reset_sensor_placement(n_clicks, active_tab):

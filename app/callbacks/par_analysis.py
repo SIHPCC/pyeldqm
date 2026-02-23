@@ -6,7 +6,7 @@ PAR (Population At Risk) Analysis callbacks:
 import sys
 import os
 import dash
-from dash import Input, Output, State, ALL, html
+from dash import Input, Output, State, ALL, html, dcc
 import dash_bootstrap_components as dbc
 import numpy as np
 
@@ -26,9 +26,10 @@ def register(app):
          Output("par-aegl3-density", "children"),
          Output("par-aegl2-density", "children"),
          Output("par-aegl1-density", "children"),
-         Output("par-density-assessment", "children")],
+         Output("par-density-assessment", "children"),
+         Output("par-generated-script-store", "data")],
         [Input("calc-threat-btn", "n_clicks"),
-         Input("calc-par-btn-top", "n_clicks")],
+         Input("calc-threat-btn-top", "n_clicks")],
         [State("main-tabs", "active_tab"),
          State("par-population-raster-path", "value"),
          State("critical-threshold", "value"),
@@ -61,6 +62,14 @@ def register(app):
          State({"type": "multi-height", "index": ALL}, "value")],
         prevent_initial_call=True,
     )(calculate_par_results)
+
+    # Download PAR script
+    app.callback(
+        Output("par-script-download", "data"),
+        Input("btn-download-par-script", "n_clicks"),
+        State("par-generated-script-store", "data"),
+        prevent_initial_call=True,
+    )(download_par_script)
 
     app.callback(
         [Output("par-map-container", "children", allow_duplicate=True),
@@ -124,9 +133,9 @@ def calculate_par_results(
     _NO = dash.no_update
 
     if active_tab != "tab-par-analysis":
-        return [_NO] * 13
+        return [_NO] * 14
     if n_clicks is None and n_clicks_top is None:
-        return [_NO] * 13
+        return [_NO] * 14
 
     source_note = "Using PAR-specific parameters."
     using_threat_params = False
@@ -166,7 +175,7 @@ def calculate_par_results(
     def _raster_error(map_div, alert_text, color="warning"):
         return (map_div, "---", "---", "---",
                 dbc.Alert(alert_text, color=color),
-                "---", "---", "---", "---", "---", "---", "---", "")
+                "---", "---", "---", "---", "---", "---", "---", "", _NO)
 
     if not raster_path or not isinstance(raster_path, str) or raster_path.strip() == "":
         init_map = html.Div([
@@ -188,7 +197,7 @@ def calculate_par_results(
     from core.utils.zone_extraction import extract_zones
     from ..utils.population import compute_par_counts_from_raster
 
-    map_component, _, status, _, _, _, _, concentration_data = calculate_threat_zones(
+    map_component, _, status, _, _, _, _, concentration_data, _ = calculate_threat_zones(
         n_clicks, n_clicks_top,
         release_type, chemical, source_term_mode, terrain_roughness, receptor_height_m,
         weather_mode, datetime_mode, specific_datetime, timezone_offset_hrs,
@@ -199,7 +208,7 @@ def calculate_par_results(
 
     if not concentration_data or concentration_data is dash.no_update:
         detail = dbc.Alert("PAR calculation could not complete. Please review inputs and try again.", color="warning")
-        return map_component, "---", "---", "---", detail, "---", "---", "---", "---", "---", "---", "---", ""
+        return map_component, "---", "---", "---", detail, "---", "---", "---", "---", "---", "---", "---", "", _NO
 
     try:
         X = np.array(concentration_data.get("X"))
@@ -242,6 +251,70 @@ def calculate_par_results(
         else:
             risk_color, risk_label = "success", "Moderate/Low"
 
+        # ── Generate PAR script for download ──────────────────────────────────
+        _par_script_data = _NO
+        try:
+            from ..utils.script_generator import generate_par_script
+            import re as _re
+            _chem_props_found = None
+            try:
+                from ..components.tabs.threat_zones import CHEMICAL_OPTIONS
+                _chem_props_found = CHEMICAL_OPTIONS.get(chemical)
+            except Exception:
+                pass
+            _mw = (_chem_props_found.get("molecular_weight") or _chem_props_found.get("MW")
+                   if _chem_props_found else 17.03)
+            _multi_sources_par = None
+            if release_type == "multi":
+                _multi_sources_par = [
+                    {"lat": mlat, "lon": mlon,
+                     "name": f"Source {i + 1}",
+                     "height": float(mheight or 3.0),
+                     "rate": float(mrate or 0.0)}
+                    for i, (mlat, mlon, mrate, mheight) in enumerate(
+                        zip(multi_lats, multi_lons, multi_rates, multi_heights)
+                    )
+                ]
+            _aegl_thr = concentration_data.get("thresholds", {"AEGL-1": 30, "AEGL-2": 160, "AEGL-3": 1100})
+            _par_script = generate_par_script(
+                chemical=chemical,
+                molecular_weight=float(_mw),
+                release_type=release_type,
+                source_term_mode=source_term_mode,
+                lat=float(lat or 0),
+                lon=float(lon or 0),
+                release_rate=float(release_rate or 0.0),
+                tank_height=float(tank_height or 3.0),
+                duration_minutes=float(duration_minutes or 30.0),
+                mass_released_kg=float(mass_released_kg or 500.0),
+                terrain_roughness=terrain_roughness or "URBAN",
+                receptor_height_m=float(receptor_height_m or 1.5),
+                weather_mode=weather_mode or "manual",
+                wind_speed=float(wind_speed or 2.5),
+                wind_dir=float(wind_dir or 90),
+                temperature_c=float(temp or 25),
+                humidity_pct=float(humidity or 65),
+                cloud_cover_pct=float(cloud_cover or 30),
+                timezone_offset_hrs=float(timezone_offset_hrs or 5.0),
+                datetime_mode=datetime_mode or "now",
+                specific_datetime=specific_datetime,
+                aegl_thresholds=_aegl_thr,
+                x_max=int(concentration_data.get("x_max", 12000)),
+                y_max=int(concentration_data.get("y_max", 4000)),
+                raster_path=raster_path or "",
+                critical_threshold=float(critical_threshold or 10000),
+                high_threshold=float(high_threshold or 5000),
+                multi_sources=_multi_sources_par,
+            )
+            _chem_slug = _re.sub(r"[^a-z0-9]+", "_", chemical.lower()).strip("_")[:40]
+            from datetime import datetime as _dt
+            _par_filename = f"{_chem_slug}_par_analysis_{_dt.now().strftime('%Y%m%d_%H%M%S')}.py"
+            _par_script_data = {"content": _par_script, "filename": _par_filename, "type": "text/plain"}
+        except Exception as _sg_err:
+            import traceback
+            print(f"[par_script_generator] Warning: {_sg_err}\n{traceback.format_exc()}",
+                  file=sys.stderr)
+
         details = dbc.Alert([
             html.Div([
                 html.I(className="fas fa-users", style={"marginRight": "0.5rem"}),
@@ -251,6 +324,13 @@ def calculate_par_results(
             html.Small(par_note),
             html.Br(),
             html.Small(source_note),
+            html.Br(),
+            dbc.Button([
+                html.I(className="fas fa-file-download", style={"marginRight": "0.4rem"}),
+                f"Download PAR Script ({_par_filename})" if _par_script_data is not _NO else "Download PAR Script",
+            ], id="btn-download-par-script", color="light", size="sm",
+               style={"marginTop": "0.4rem", "fontSize": "0.82rem"},
+               disabled=(_par_script_data is _NO)),
         ], color=risk_color)
 
         # Geographic stats
@@ -323,11 +403,12 @@ def calculate_par_results(
             max_distance,
             aegl3_density, aegl2_density, aegl1_density,
             density_assessment,
+            _par_script_data,
         )
     except Exception as exc:
         detail = dbc.Alert(f"Error in PAR post-processing: {exc}", color="danger")
         return (map_component, "---", "---", "---", detail,
-                "---", "---", "---", "---", "---", "---", "---", "")
+                "---", "---", "---", "---", "---", "---", "---", "", _NO)
 
 
 def reset_par_analysis(n_clicks, active_tab):
@@ -355,3 +436,20 @@ def reset_par_analysis(n_clicks, active_tab):
         "", 10000, 5000, "threat",
         "---", "---", "---", "---", "---", "---", "---", "",
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PAR script download callback
+# ─────────────────────────────────────────────────────────────────────────────
+
+def download_par_script(n_clicks, script_data):
+    """Send the generated PAR script to the browser as a .py file download."""
+    if not n_clicks or not script_data:
+        return dash.no_update
+    content = script_data.get("content", "")
+    filename = script_data.get("filename", "par_analysis_script.py")
+    # Guard: filename must always use par_analysis naming
+    if "threat_zones" in filename:
+        filename = filename.replace("threat_zones", "par_analysis")
+    return dcc.send_string(content, filename)
+

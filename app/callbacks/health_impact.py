@@ -7,6 +7,8 @@ import dash
 from dash import Input, Output, State, ALL, html
 import dash_bootstrap_components as dbc
 import numpy as np
+import re
+from datetime import datetime
 
 
 def register(app):
@@ -20,7 +22,8 @@ def register(app):
          Output("health-threshold-table", "children"),
          Output("health-details", "children"),
          Output("health-status", "children"),
-         Output("health-status-top", "children")],
+         Output("health-status-top", "children"),
+         Output("health-generated-script-store", "data")],
         [Input("calc-health-btn", "n_clicks"),
          Input("calc-health-btn-top", "n_clicks")],
         [State("main-tabs", "active_tab"),
@@ -53,6 +56,13 @@ def register(app):
          State({"type": "multi-height", "index": ALL}, "value")],
         prevent_initial_call=True,
     )(analyze_health_impact)
+
+    app.callback(
+        Output("health-script-download", "data"),
+        Input("btn-download-health-script", "n_clicks"),
+        State("health-generated-script-store", "data"),
+        prevent_initial_call=True,
+    )(download_health_script)
 
     app.callback(
         [Output("health-map-container", "children", allow_duplicate=True),
@@ -189,9 +199,9 @@ def analyze_health_impact(
 ):
     _NO = dash.no_update
     if active_tab != "tab-health-impact":
-        return [_NO] * 9
+        return [_NO] * 10
     if n_clicks is None and n_clicks_top is None:
-        return [_NO] * 9
+        return [_NO] * 10
 
     source_note = "Using Health Impact-specific parameters."
     if health_parameter_source_mode == "threat" and isinstance(threat_params_store, dict):
@@ -226,14 +236,14 @@ def analyze_health_impact(
 
     if not health_threshold_sets:
         warn = dbc.Alert("Please select at least one threshold set (AEGL, ERPG, PAC, or IDLH).", color="warning")
-        return dash.no_update, "---", "---", "---", "---", "---", warn, warn, warn
+        return dash.no_update, "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
     try:
         from .threat_zones import calculate_threat_zones
         from core.utils.zone_extraction import extract_zones
         from core.visualization import add_zone_polygons, ensure_layer_control, fit_map_to_polygons
 
-        (map_component, _, status, _, _, _, _, concentration_data) = calculate_threat_zones(
+        (map_component, _, status, _, _, _, _, concentration_data, _) = calculate_threat_zones(
             n_clicks, n_clicks_top, release_type, chemical,
             source_term_mode, terrain_roughness, receptor_height_m, weather_mode,
             datetime_mode, specific_datetime, timezone_offset_hrs,
@@ -244,7 +254,7 @@ def analyze_health_impact(
 
         if not concentration_data or concentration_data is dash.no_update:
             warn = dbc.Alert("Unable to generate threat zones for health impact analysis.", color="warning")
-            return map_component, "---", "---", "---", "---", "---", warn, warn, warn
+            return map_component, "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         X = np.array(concentration_data.get("X"))
         Y = np.array(concentration_data.get("Y"))
@@ -310,12 +320,80 @@ def analyze_health_impact(
 
         selected_sets_str = ", ".join(s.upper() for s in health_threshold_sets) if health_threshold_sets else "---"
 
+        _health_script_data = _NO
+        _health_filename = ""
+        try:
+            from ..utils.script_generator import generate_health_impact_script
+            from ..components.tabs.threat_zones import CHEMICAL_OPTIONS
+
+            _chem_props_found = CHEMICAL_OPTIONS.get(chemical, {})
+            _mw = _chem_props_found.get("molecular_weight") or _chem_props_found.get("MW") or 17.03
+
+            _multi_sources_health = None
+            if release_type == "multi":
+                _multi_sources_health = [
+                    {
+                        "lat": mlat,
+                        "lon": mlon,
+                        "name": f"Source {i + 1}",
+                        "height": float(mheight or 3.0),
+                        "rate": float(mrate or 0.0),
+                    }
+                    for i, (mlat, mlon, mrate, mheight) in enumerate(
+                        zip(multi_lats or [], multi_lons or [], multi_rates or [], multi_heights or [])
+                    )
+                    if mlat is not None and mlon is not None
+                ]
+
+            _health_script = generate_health_impact_script(
+                chemical=chemical,
+                molecular_weight=float(_mw),
+                release_type=release_type,
+                source_term_mode=source_term_mode,
+                lat=float(lat or 0),
+                lon=float(lon or 0),
+                release_rate=float(release_rate or 0.0),
+                tank_height=float(tank_height or 3.0),
+                duration_minutes=float(duration_minutes or 30.0),
+                mass_released_kg=float(mass_released_kg or 500.0),
+                terrain_roughness=terrain_roughness or "URBAN",
+                receptor_height_m=float(receptor_height_m or 1.5),
+                weather_mode=weather_mode or "manual",
+                wind_speed=float(wind_speed or 3),
+                wind_dir=float(wind_dir or 90),
+                temperature_c=float(temp or 25),
+                humidity_pct=float(humidity or 60),
+                cloud_cover_pct=float(cloud_cover or 25),
+                timezone_offset_hrs=float(timezone_offset_hrs or 5),
+                datetime_mode=datetime_mode or "now",
+                specific_datetime=specific_datetime,
+                aegl_thresholds=thresholds or {"AEGL-1": 30, "AEGL-2": 160, "AEGL-3": 1100},
+                x_max=int(concentration_data.get("x_max", 12000)),
+                y_max=int(concentration_data.get("y_max", 4000)),
+                selected_threshold_sets=list(health_threshold_sets or ["aegl"]),
+                multi_sources=_multi_sources_health,
+            )
+
+            _chem_slug = re.sub(r"[^a-z0-9]+", "_", chemical.lower()).strip("_")[:40]
+            _health_filename = f"{_chem_slug}_health_impact_{datetime.now().strftime('%Y%m%d_%H%M%S')}.py"
+            _health_script_data = {"content": _health_script, "filename": _health_filename}
+        except Exception as _health_sg_err:
+            import traceback
+            print(f"[health_script_generator] Warning: {_health_sg_err}\n{traceback.format_exc()}")
+
         detail = dbc.Alert([
             html.Strong("Health impact threshold zone analysis completed."),
             html.Br(),
             html.Small(f"Threshold sets: {selected_sets_str}. {source_note}"),
             html.Br(),
             html.Small(f"Max concentration: {max_conc:.4f} ppm. Stability class: {stability_class}."),
+            html.Br(),
+            dbc.Button([
+                html.I(className="fas fa-file-download", style={"marginRight": "0.4rem"}),
+                f"Download Script ({_health_filename})" if _health_script_data is not _NO else "Download Script",
+            ], id="btn-download-health-script", color="light", size="sm",
+               style={"marginTop": "0.4rem", "fontSize": "0.82rem"},
+               disabled=(_health_script_data is _NO)),
         ], color="success")
 
         status_msg = dbc.Alert([
@@ -328,12 +406,12 @@ def analyze_health_impact(
         return (
             health_map, max_conc_str, str(len(all_zones)),
             str(stability_class), selected_sets_str,
-            threshold_table, detail, status_msg, status_msg,
+            threshold_table, detail, status_msg, status_msg, _health_script_data,
         )
     except Exception as exc:
         error_alert = dbc.Alert(f"Error in Health Impact analysis: {exc}", color="danger")
         return (dash.no_update, "---", "---", "---", "---", "---",
-                error_alert, error_alert, error_alert)
+                error_alert, error_alert, error_alert, _NO)
 
 
 def reset_health_analysis(n_clicks, active_tab):
@@ -349,3 +427,12 @@ def reset_health_analysis(n_clicks, active_tab):
     ], style={"textAlign": "center", "padding": "3rem", "color": "#666"})
 
     return initial_map, "---", "---", "---", "---", "---", "", "", ""
+
+
+def download_health_script(n_clicks, script_data):
+    """Send the generated Health Impact script to the browser as a .py file download."""
+    if not n_clicks or not script_data:
+        return dash.no_update
+    content = script_data.get("content", "")
+    filename = script_data.get("filename", "health_impact_script.py")
+    return {"content": content, "filename": filename}

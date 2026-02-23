@@ -22,7 +22,7 @@ def create_par_content():
                         dbc.Button(
                             [html.I(className="fas fa-calculator", style={'marginRight': '0.5rem'}),
                              "Calculate PAR"],
-                            id="calc-par-btn-top",
+                            id="calc-threat-btn-top",
                             color="success",
                             size="lg",
                             className="w-100",
@@ -237,7 +237,6 @@ def create_par_content():
         html.Div(id="par-details", className="mt-3"),
 
         # ── Hidden placeholders required by shared Threat-Zones callbacks ───
-        html.Button(id="calc-threat-btn-top", style={'display': 'none'}),
         html.Div(id="threat-map-container", style={'display': 'none'}),
         html.Div(id="zone-statistics", style={'display': 'none'}),
         html.Div(id="chemical-properties-container", style={'display': 'none'}),

@@ -305,6 +305,27 @@ def create_threat_zones_content():
             data={'X': None, 'Y': None, 'concentration': None,
                   'thresholds': None, 'wind_dir': 0},
         ),
+
+        # ── Hidden placeholders required by PAR-Analysis callbacks ──────────
+        html.Div(id="par-map-container",         style={'display': 'none'}),
+        html.Div(id="par-aegl3-count",           style={'display': 'none'}),
+        html.Div(id="par-aegl2-count",           style={'display': 'none'}),
+        html.Div(id="par-aegl1-count",           style={'display': 'none'}),
+        html.Div(id="par-details",               style={'display': 'none'}),
+        html.Div(id="par-aegl3-area",            style={'display': 'none'}),
+        html.Div(id="par-aegl2-area",            style={'display': 'none'}),
+        html.Div(id="par-aegl1-area",            style={'display': 'none'}),
+        html.Div(id="par-max-distance",          style={'display': 'none'}),
+        html.Div(id="par-aegl3-density",         style={'display': 'none'}),
+        html.Div(id="par-aegl2-density",         style={'display': 'none'}),
+        html.Div(id="par-aegl1-density",         style={'display': 'none'}),
+        html.Div(id="par-density-assessment",    style={'display': 'none'}),
+        dcc.Input(id="par-population-raster-path",  style={'display': 'none'}, value=""),
+        dcc.Input(id="critical-threshold",          style={'display': 'none'}, value=10000),
+        dcc.Input(id="high-threshold",              style={'display': 'none'}, value=5000),
+        dcc.Input(id="par-parameter-source-mode",   style={'display': 'none'}, value="threat"),
+        html.Button(id="reset-par-btn",             style={'display': 'none'}),
+        html.Button(id="btn-download-par-script",   style={'display': 'none'}),
     ], width=9, style=CONTENT_STYLE)
 
 

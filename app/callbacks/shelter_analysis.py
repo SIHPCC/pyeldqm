@@ -7,6 +7,8 @@ import dash
 from dash import Input, Output, State, ALL, html
 import dash_bootstrap_components as dbc
 import numpy as np
+import re
+from datetime import datetime
 
 
 def register(app):
@@ -20,7 +22,8 @@ def register(app):
          Output("shelter-zone-breakdown", "children"),
          Output("shelter-details", "children"),
          Output("shelter-status", "children"),
-         Output("shelter-status-top", "children")],
+         Output("shelter-status-top", "children"),
+         Output("shelter-generated-script-store", "data")],
         [Input("calc-shelter-btn", "n_clicks"),
          Input("calc-shelter-btn-top", "n_clicks")],
         [State("main-tabs", "active_tab"),
@@ -56,6 +59,13 @@ def register(app):
          State({"type": "multi-height", "index": ALL}, "value")],
         prevent_initial_call=True,
     )(analyze_shelters)
+
+    app.callback(
+        Output("shelter-script-download", "data"),
+        Input("btn-download-shelter-script", "n_clicks"),
+        State("shelter-generated-script-store", "data"),
+        prevent_initial_call=True,
+    )(download_shelter_script)
 
     app.callback(
         [Output("shelter-map-container", "children", allow_duplicate=True),
@@ -145,9 +155,9 @@ def analyze_shelters(
 ):
     _NO = dash.no_update
     if active_tab != "tab-shelter-analysis":
-        return [_NO] * 9
+        return [_NO] * 10
     if n_clicks is None and n_clicks_top is None:
-        return [_NO] * 9
+        return [_NO] * 10
 
     source_note = "Using Shelter Analysis-specific parameters."
     if shelter_parameter_source_mode == "threat" and isinstance(threat_params_store, dict):
@@ -186,7 +196,7 @@ def analyze_shelters(
         from core.visualization import add_zone_polygons, ensure_layer_control, fit_map_to_polygons
         from core.protective_actions import analyze_shelter_zones
 
-        (map_component, _, status, _, _, _, _, concentration_data) = calculate_threat_zones(
+        (map_component, _, status, _, _, _, _, concentration_data, _) = calculate_threat_zones(
             n_clicks, n_clicks_top, release_type, chemical,
             source_term_mode, terrain_roughness, receptor_height_m, weather_mode,
             datetime_mode, specific_datetime, timezone_offset_hrs,
@@ -197,7 +207,7 @@ def analyze_shelters(
 
         if not concentration_data or concentration_data is dash.no_update:
             warn = dbc.Alert("Unable to generate threat zones for shelter analysis.", color="warning")
-            return map_component, "---", "---", "---", "---", "---", warn, warn, warn
+            return map_component, "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         X = np.array(concentration_data.get("X"))
         Y = np.array(concentration_data.get("Y"))
@@ -315,6 +325,70 @@ def analyze_shelters(
             color=primary_color,
         )
 
+        _shelter_script_data = _NO
+        _shelter_filename = ""
+        try:
+            from ..utils.script_generator import generate_shelter_script
+            from ..components.tabs.threat_zones import CHEMICAL_OPTIONS
+
+            _chem_props_found = CHEMICAL_OPTIONS.get(chemical, {})
+            _mw = _chem_props_found.get("molecular_weight") or _chem_props_found.get("MW") or 17.03
+
+            _multi_sources_shelter = None
+            if release_type == "multi":
+                _multi_sources_shelter = [
+                    {
+                        "lat": mlat,
+                        "lon": mlon,
+                        "name": f"Source {i + 1}",
+                        "height": float(mheight or 3.0),
+                        "rate": float(mrate or 0.0),
+                    }
+                    for i, (mlat, mlon, mrate, mheight) in enumerate(
+                        zip(multi_lats or [], multi_lons or [], multi_rates or [], multi_heights or [])
+                    )
+                    if mlat is not None and mlon is not None
+                ]
+
+            _shelter_script = generate_shelter_script(
+                chemical=chemical,
+                molecular_weight=float(_mw),
+                release_type=release_type,
+                source_term_mode=source_term_mode,
+                lat=float(lat or 0),
+                lon=float(lon or 0),
+                release_rate=float(release_rate or 0.0),
+                tank_height=float(tank_height or 3.0),
+                duration_minutes=float(duration_minutes or 30.0),
+                mass_released_kg=float(mass_released_kg or 500.0),
+                terrain_roughness=terrain_roughness or "URBAN",
+                receptor_height_m=float(receptor_height_m or 1.5),
+                weather_mode=weather_mode or "manual",
+                wind_speed=float(wind_speed or 3),
+                wind_dir=float(wind_dir or 90),
+                temperature_c=float(temp or 25),
+                humidity_pct=float(humidity or 60),
+                cloud_cover_pct=float(cloud_cover or 25),
+                timezone_offset_hrs=float(timezone_offset_hrs or 5),
+                datetime_mode=datetime_mode or "now",
+                specific_datetime=specific_datetime,
+                aegl_thresholds=thresholds or {"AEGL-1": 30, "AEGL-2": 160, "AEGL-3": 1100},
+                x_max=int(concentration_data.get("x_max", 12000)),
+                y_max=int(concentration_data.get("y_max", 4000)),
+                building_type=building_type,
+                sheltering_time_min=float(sheltering_time),
+                evacuation_time_min=float(evacuation_time),
+                sample_grid_points=int(grid_points),
+                multi_sources=_multi_sources_shelter,
+            )
+
+            _chem_slug = re.sub(r"[^a-z0-9]+", "_", chemical.lower()).strip("_")[:40]
+            _shelter_filename = f"{_chem_slug}_shelter_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.py"
+            _shelter_script_data = {"content": _shelter_script, "filename": _shelter_filename}
+        except Exception as _shelter_sg_err:
+            import traceback
+            print(f"[shelter_script_generator] Warning: {_shelter_sg_err}\n{traceback.format_exc()}")
+
         shelter_map = html.Iframe(
             srcDoc=m._repr_html_(),
             style={"width": "100%", "height": "700px", "border": "none",
@@ -327,6 +401,13 @@ def analyze_shelters(
             html.Small(f"Building type: {building_type.capitalize()}. {source_note}"),
             html.Br(),
             html.Small(f"Sheltering time: {sheltering_time:.0f} min, Evacuation time: {evacuation_time:.0f} min."),
+            html.Br(),
+            dbc.Button([
+                html.I(className="fas fa-file-download", style={"marginRight": "0.4rem"}),
+                f"Download Script ({_shelter_filename})" if _shelter_script_data is not _NO else "Download Script",
+            ], id="btn-download-shelter-script", color="light", size="sm",
+               style={"marginTop": "0.4rem", "fontSize": "0.82rem"},
+               disabled=(_shelter_script_data is _NO)),
         ], color="success")
 
         status_msg = dbc.Alert([
@@ -338,12 +419,12 @@ def analyze_shelters(
             shelter_map, primary_card,
             str(len(shelter_zones)), str(len(evacuate_zones)),
             str(sampled_pts), zone_breakdown_table,
-            detail, status_msg, status_msg,
+            detail, status_msg, status_msg, _shelter_script_data,
         )
     except Exception as exc:
         error_alert = dbc.Alert(f"Error in Shelter Analysis calculation: {exc}", color="danger")
         return (dash.no_update, "---", "---", "---", "---", "---",
-                error_alert, error_alert, error_alert)
+                error_alert, error_alert, error_alert, _NO)
 
 
 def reset_shelter_analysis(n_clicks, active_tab):
@@ -362,3 +443,12 @@ def reset_shelter_analysis(n_clicks, active_tab):
         initial_map, "---", "---", "---", "---", "---", "", "", "",
         "industrial", 60, 15, 15, "threat",
     )
+
+
+def download_shelter_script(n_clicks, script_data):
+    """Send the generated Shelter Analysis script to the browser as a .py file download."""
+    if not n_clicks or not script_data:
+        return dash.no_update
+    content = script_data.get("content", "")
+    filename = script_data.get("filename", "shelter_analysis_script.py")
+    return {"content": content, "filename": filename}

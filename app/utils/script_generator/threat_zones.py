@@ -1,24 +1,21 @@
 """
-app/utils/script_generator.py
-==============================
-Generates a standalone, runnable Python example script from the exact
-inputs used in a Threat Zones calculation inside the Dash app.
-
-The generated script mirrors the full end-to-end computation (dispersion
-model, map creation, zone extraction) so it can be run independently of
-the Dash application.
+app/utils/script_generator/threat_zones.py
+===========================================
+Generates a standalone, runnable Python example script for the Chemical
+Threat Zones calculation tab.  The generated script uses pyELDQM as an
+installed package (import pyeldqm) and can be run from any directory.
 """
 
 from __future__ import annotations
 
-import os
 import textwrap
+import re
 from datetime import datetime
 
 
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Public API
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
 def generate_threat_zones_script(
     *,
@@ -48,10 +45,8 @@ def generate_threat_zones_script(
     y_max: int,
     multi_sources: list[dict] | None = None,
 ) -> str:
-    """Return the full text of a standalone Python script.
+    """Return the full text of a standalone Python script for threat zones.
 
-    Parameters
-    ----------
     All parameters mirror the sidebar inputs collected by the app callback.
     multi_sources : list of dicts with keys lat, lon, rate, height, name
         Only used when release_type == 'multi'.
@@ -91,25 +86,23 @@ def generate_threat_zones_script(
     if datetime_mode == "specific" and specific_datetime:
         dt_block = f'simulation_datetime = datetime.fromisoformat("{specific_datetime}")'
     else:
-        dt_block = 'simulation_datetime = datetime.now()'
+        dt_block = "simulation_datetime = datetime.now()"
 
     # ── Source-term block (single vs multi) ─────────────────────────────────
     if release_type == "single":
-        dispersion_block = _single_source_block(source_term_mode, duration_minutes)
+        dispersion_block = _single_source_block(source_term_mode)
     else:
-        dispersion_block = _multi_source_block(
-            source_term_mode, multi_sources or [], duration_minutes
-        )
+        dispersion_block = _multi_source_block(source_term_mode, multi_sources or [])
 
     # ── Multi-source config section ─────────────────────────────────────────
     multi_source_cfg = ""
     if release_type == "multi" and multi_sources:
         lines = ["RELEASE_SOURCES = ["]
         for i, s in enumerate(multi_sources):
-            lines.append(f"    {{  # Source {i+1}")
+            lines.append(f"    {{  # Source {i + 1}")
             lines.append(f'        "lat"   : {s["lat"]},')
             lines.append(f'        "lon"   : {s["lon"]},')
-            lines.append(f'        "name"  : "{s.get("name", f"Source {i+1}")}",')
+            lines.append(f'        "name"  : "{s.get("name", f"Source {i + 1}")}",')
             lines.append(f'        "height": {s["height"]},')
             lines.append(f'        "rate"  : {s["rate"]},')
             lines.append(f'        "color" : "{_source_color(i)}",')
@@ -121,20 +114,12 @@ def generate_threat_zones_script(
 
     # ── Weather import ──────────────────────────────────────────────────────
     weather_import = (
-        "from core.meteorology.realtime_weather import get_weather"
+        "from pyeldqm.core.meteorology.realtime_weather import get_weather"
         if weather_mode == "auto"
-        else "# from core.meteorology.realtime_weather import get_weather  # not needed for manual weather"
+        else "# from pyeldqm.core.meteorology.realtime_weather import get_weather  # not needed for manual weather"
     )
 
-    # ── Assemble script section by section ──────────────────────────────────
-    # We concatenate sections explicitly rather than using one big f-string so
-    # that multi-line substituted blocks (dispersion_block, weather_block, …)
-    # retain their own indentation correctly.  Each "fixed" section uses its
-    # own textwrap.dedent so it has zero leading indent.
-    import re as _re
-
     def _d(s):
-        """Dedent a local triple-quoted string."""
         return textwrap.dedent(s).lstrip("\n")
 
     s_docstring = _d(f"""\
@@ -148,30 +133,25 @@ def generate_threat_zones_script(
         Location   : {lat}, {lon}
         Weather    : {"Real-time (Open-Meteo)" if weather_mode == "auto" else "Manual"}
 
-        This script is a complete, self-contained reproduction of the threat-zone
-        calculation that was performed inside the pyELDQM Dash application,
-        including all outputs: chemical properties, simulation conditions, zone
+        Complete reproduction of the Threat Zones calculation from the pyELDQM
+        Dash application: chemical properties, simulation conditions, zone
         distances, interactive map, and 5 analytics charts.
-        Run it directly from the ``examples/`` directory:
 
+        Requirements
+        ------------
+            pip install pyeldqm
+
+        Run from any directory:
             python {chem_slug}_threat_zones.py
 
-        Outputs (saved to outputs/threat_zones/)
+        Outputs saved to ./outputs/threat_zones/
         -----------------------------------------
         - {chem_slug}_threat_zones_<ts>.html         — interactive Folium map
-        - {chem_slug}_analytics_centerline_<ts>.html — centerline concentration profile
-        - {chem_slug}_analytics_crosswind_<ts>.html  — crosswind concentration profiles
-        - {chem_slug}_analytics_contour_<ts>.html    — 2D spatial concentration map
-        - {chem_slug}_analytics_statistics_<ts>.html — concentration statistics & impact area
-        - {chem_slug}_analytics_distance_<ts>.html   — max concentration vs distance
-
-        Dependencies
-        ------------
-            pip install numpy folium scikit-image branca requests plotly shapely
-
-        Notes
-        -----
-        - Adjust the configuration constants under CONFIGURATION to explore scenarios.
+        - {chem_slug}_analytics_centerline_<ts>.html — centerline concentration
+        - {chem_slug}_analytics_crosswind_<ts>.html  — crosswind profiles
+        - {chem_slug}_analytics_contour_<ts>.html    — 2D concentration map
+        - {chem_slug}_analytics_statistics_<ts>.html — statistics & impact area
+        - {chem_slug}_analytics_distance_<ts>.html   — max conc vs distance
         \"\"\"
     """)
 
@@ -180,8 +160,6 @@ def generate_threat_zones_script(
         # IMPORTS
         # ============================================================================
 
-        import sys
-        import os
         import webbrowser
         from math import radians, cos, sin, asin, sqrt
         from pathlib import Path
@@ -189,35 +167,29 @@ def generate_threat_zones_script(
 
         import numpy as np
 
-        # -- Add project root to Python path ----------------------------------------
-        _here = os.path.dirname(os.path.abspath(__file__))
-        _root = os.path.dirname(_here)
-        if _root not in sys.path:
-            sys.path.insert(0, _root)
-
-        # -- pyELDQM core imports ----------------------------------------------------
-        from core.dispersion_models.gaussian_model import (
+        # -- pyELDQM package imports (pip install pyeldqm) ---------------------------
+        from pyeldqm.core.dispersion_models.gaussian_model import (
             calculate_gaussian_dispersion,
             multi_source_concentration,
         )
-        from core.meteorology.stability import get_stability_class
-        from core.meteorology.wind_profile import wind_speed as wind_profile
-        from core.chemical_database import ChemicalDatabase
+        from pyeldqm.core.meteorology.stability import get_stability_class
+        from pyeldqm.core.meteorology.wind_profile import wind_speed as wind_profile
+        from pyeldqm.core.chemical_database import ChemicalDatabase
         {weather_import}
-        from core.visualization.folium_maps import (
+        from pyeldqm.core.visualization.folium_maps import (
             create_dispersion_map,
             meters_to_latlon,
             add_facility_markers,
             calculate_optimal_zoom_level,
         )
-        from core.visualization import (
+        from pyeldqm.core.visualization import (
             add_zone_polygons,
             ensure_layer_control,
             fit_map_to_polygons,
         )
-        from core.utils.features import setup_computational_grid
-        from core.utils.zone_extraction import extract_zones
-        from app.utils.plot_builders import (
+        from pyeldqm.core.utils.features import setup_computational_grid
+        from pyeldqm.core.utils.zone_extraction import extract_zones
+        from pyeldqm.app.utils.plot_builders import (
             create_centerline_concentration_plot,
             create_crosswind_concentration_plot,
             create_concentration_contour_plot,
@@ -245,7 +217,7 @@ def generate_threat_zones_script(
         SOURCE_TERM_MODE   = {source_term_mode!r}        # "continuous" or "instantaneous"
         RELEASE_RATE       = {release_rate}              # g/s  (continuous mode)
         TANK_HEIGHT        = {tank_height}               # m above ground
-        DURATION_MINUTES   = {duration_minutes}          # release duration
+        DURATION_MINUTES   = {duration_minutes}          # release duration (min)
         MASS_RELEASED_KG   = {mass_released_kg}          # total mass (instantaneous mode)
         TERRAIN_ROUGHNESS  = {terrain_roughness!r}       # "URBAN" or "RURAL"
         RECEPTOR_HEIGHT_M  = {receptor_height_m}         # breathing-zone height (m)
@@ -254,7 +226,7 @@ def generate_threat_zones_script(
         WEATHER_MODE       = {weather_mode!r}            # "manual" or "auto"
         WIND_SPEED         = {wind_speed}                # m/s
         WIND_DIRECTION     = {wind_dir}                  # degrees (0=N, 90=E, 180=S, 270=W)
-        TEMPERATURE_C      = {temperature_c}             # degrees C
+        TEMPERATURE_C      = {temperature_c}             # °C
         HUMIDITY           = {humidity_pct}              # %
         CLOUD_COVER        = {cloud_cover_pct}           # %
 
@@ -273,7 +245,6 @@ def generate_threat_zones_script(
 
     """)
 
-    # multi_source_cfg already at correct indent (0-based)
     s_sources = "# -- Multi-source definitions (used only when RELEASE_TYPE == 'multi') --\n"
     s_sources += multi_source_cfg + "\n\n"
 
@@ -380,7 +351,6 @@ def generate_threat_zones_script(
         # ZONE EXTRACTION
         # ============================================================================
         print("\\nExtracting threat zones ...")
-        # Returns Dict[str, Optional[Polygon]]  (shapely Polygon or None per level)
         threat_zones = extract_zones(
             X, Y, concentration, AEGL_THRESHOLDS,
             SOURCE_LAT, SOURCE_LON,
@@ -481,7 +451,7 @@ def generate_threat_zones_script(
         # ============================================================================
         print("\\nGenerating analytics charts ...")
 
-        _analytics_dir = Path(_root) / "outputs" / "threat_zones"
+        _analytics_dir = Path.cwd() / "outputs" / "threat_zones"
         _analytics_dir.mkdir(parents=True, exist_ok=True)
         _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -585,13 +555,12 @@ def generate_threat_zones_script(
     return script
 
 
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Private helpers
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _slug(name: str) -> str:
     """Convert a chemical name to a filesystem-safe slug."""
-    import re
     s = name.lower()
     s = re.sub(r"[^a-z0-9]+", "_", s).strip("_")
     return s[:40]
@@ -603,10 +572,10 @@ def _source_color(index: int) -> str:
     return colors[index % len(colors)]
 
 
-def _single_source_block(source_term_mode: str, duration_minutes: float) -> str:
+def _single_source_block(source_term_mode: str) -> str:
     if source_term_mode == "instantaneous":
         return textwrap.dedent("""\
-            source_q       = TOTAL_MASS_G           # instantaneous total mass (g)
+            source_q        = TOTAL_MASS_G          # instantaneous total mass (g)
             dispersion_mode = "instantaneous"
 
             concentration, U_local, stability_class, resolved_sources = calculate_gaussian_dispersion(
@@ -634,7 +603,7 @@ def _single_source_block(source_term_mode: str, duration_minutes: float) -> str:
         """)
     else:
         return textwrap.dedent("""\
-            source_q       = RELEASE_RATE           # continuous release rate (g/s)
+            source_q        = RELEASE_RATE          # continuous release rate (g/s)
             dispersion_mode = "continuous"
 
             concentration, U_local, stability_class, resolved_sources = calculate_gaussian_dispersion(
@@ -665,7 +634,6 @@ def _single_source_block(source_term_mode: str, duration_minutes: float) -> str:
 def _multi_source_block(
     source_term_mode: str,
     multi_sources: list[dict],
-    duration_minutes: float,
 ) -> str:
     return textwrap.dedent(f"""\
         center_lat = sum(s["lat"] for s in RELEASE_SOURCES) / len(RELEASE_SOURCES)
@@ -715,28 +683,8 @@ def _multi_source_block(
             "color" : s["color"],
         }} for s in RELEASE_SOURCES]
 
-        # Use the centroid as the display origin for the map
+        # Use centroid as map display origin
         SOURCE_LAT, SOURCE_LON = center_lat, center_lon
         print(f"  U_local         : {{U_local:.2f}} m/s")
         print(f"  Stability class : {{stability_class}}")
     """)
-
-
-# ---------------------------------------------------------------------------
-# File persistence helper
-# ---------------------------------------------------------------------------
-
-def save_script_to_examples(script_text: str, chemical: str, project_root: str) -> str:
-    """Save *script_text* to ``<project_root>/examples/`` and return the path."""
-    examples_dir = os.path.join(project_root, "examples")
-    os.makedirs(examples_dir, exist_ok=True)
-
-    chem_slug = _slug(chemical)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{chem_slug}_threat_zones_{ts}.py"
-    filepath = os.path.join(examples_dir, filename)
-
-    with open(filepath, "w", encoding="utf-8") as fh:
-        fh.write(script_text)
-
-    return filepath

@@ -47,6 +47,18 @@ def create_layout():
 
         # ── Cross-tab shared state ───────────────────────────────────────────
         dcc.Store(id="threat-params-store", data=None),
+        dcc.Store(id="generated-script-store", data=None),
+        dcc.Download(id="script-download"),
+        dcc.Store(id="par-generated-script-store", data=None),
+        dcc.Download(id="par-script-download"),
+        dcc.Store(id="route-generated-script-store", data=None),
+        dcc.Download(id="route-script-download"),
+        dcc.Store(id="sensor-generated-script-store", data=None),
+        dcc.Download(id="sensor-script-download"),
+        dcc.Store(id="health-generated-script-store", data=None),
+        dcc.Download(id="health-script-download"),
+        dcc.Store(id="shelter-generated-script-store", data=None),
+        dcc.Download(id="shelter-script-download"),
 
         # ── Tab content (rendered by routing callback) ───────────────────────
         html.Div(id="tab-content", style={"position": "relative", "zIndex": 1}),

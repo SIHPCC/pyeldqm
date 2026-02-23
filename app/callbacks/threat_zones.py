@@ -56,6 +56,7 @@ _CALC_OUTPUTS = [
     Output("simulation-conditions-container", "children"),
     Output("zone-distances-container", "children"),
     Output("concentration-data-store", "data"),
+    Output("generated-script-store", "data"),
 ]
 
 
@@ -66,9 +67,9 @@ def register(app):
         _CALC_OUTPUTS,
         [Input("calc-threat-btn", "n_clicks"),
          Input("calc-threat-btn-top", "n_clicks")],
-        _SIDEBAR_STATES,
+        [State("main-tabs", "active_tab")] + _SIDEBAR_STATES,
         prevent_initial_call=True,
-    )(calculate_threat_zones)
+    )(calculate_threat_zones_from_ui)
 
     # Chemical properties panel
     app.callback(
@@ -85,6 +86,14 @@ def register(app):
         Input("concentration-data-store", "data"),
         prevent_initial_call=True,
     )(render_concentration_plots)
+
+    # Script download
+    app.callback(
+        Output("script-download", "data"),
+        Input("btn-download-script", "n_clicks"),
+        State("generated-script-store", "data"),
+        prevent_initial_call=True,
+    )(download_generated_script)
 
     # Auto-refresh (triggers from interval component)
     app.callback(
@@ -108,6 +117,28 @@ def register(app):
 # Core calculation function (also imported and called by other tab callbacks)
 # ─────────────────────────────────────────────────────────────────────────────
 
+def calculate_threat_zones_from_ui(
+    n_clicks, n_clicks_top, active_tab,
+    release_type, chemical,
+    source_term_mode, terrain_roughness, receptor_height_m,
+    weather_mode, datetime_mode, specific_datetime, timezone_offset_hrs,
+    wind_speed, wind_dir, temp, humidity, cloud_cover,
+    lat, lon, release_rate, duration_minutes, mass_released_kg, tank_height,
+    multi_lats, multi_lons, multi_rates, multi_heights,
+):
+    """UI callback wrapper: only run Threat-Zones outputs on its own tab."""
+    if active_tab != "tab-threat-zones":
+        return (dash.no_update,) * 9
+    return calculate_threat_zones(
+        n_clicks, n_clicks_top,
+        release_type, chemical,
+        source_term_mode, terrain_roughness, receptor_height_m,
+        weather_mode, datetime_mode, specific_datetime, timezone_offset_hrs,
+        wind_speed, wind_dir, temp, humidity, cloud_cover,
+        lat, lon, release_rate, duration_minutes, mass_released_kg, tank_height,
+        multi_lats, multi_lons, multi_rates, multi_heights,
+    )
+
 def calculate_threat_zones(
     n_clicks, n_clicks_top,
     release_type, chemical,
@@ -119,9 +150,10 @@ def calculate_threat_zones(
 ):
     """Calculate and display chemical threat zones (Gaussian dispersion)."""
     _NO = dash.no_update
+    _generated_script_data = None
 
     if n_clicks is None and n_clicks_top is None:
-        return _NO, _NO, _NO, _NO, _NO, _NO, _NO, _NO
+        return _NO, _NO, _NO, _NO, _NO, _NO, _NO, _NO, _NO
 
     # ── lazy imports ──────────────────────────────────────────────────────────
     try:
@@ -148,18 +180,18 @@ def calculate_threat_zones(
         )
     except Exception as import_err:
         err = dbc.Alert(f"Import error: {import_err}", color="danger")
-        return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+        return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
 
     try:
         chem_props = CHEMICAL_OPTIONS.get(chemical)
         if not chem_props:
             err = dbc.Alert(f"Chemical '{chemical}' not found in database", color="danger")
-            return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+            return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
 
         molecular_weight = chem_props.get("molecular_weight") or chem_props.get("MW")
         if not molecular_weight:
             err = dbc.Alert(f"Molecular weight not available for '{chemical}'", color="warning")
-            return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+            return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
 
         # ── Resolve datetime ───────────────────────────────────────────────────
         selected_datetime = datetime.now()
@@ -169,10 +201,10 @@ def calculate_threat_zones(
                     selected_datetime = datetime.fromisoformat(specific_datetime)
                 except (ValueError, TypeError):
                     err = dbc.Alert("Invalid specific datetime format.", color="danger")
-                    return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+                    return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
             else:
                 err = dbc.Alert("Please select a specific datetime or switch to 'Datetime Now'.", color="warning")
-                return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+                return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
 
         # ── Normalise scalars ──────────────────────────────────────────────────
         try:
@@ -361,7 +393,7 @@ def calculate_threat_zones(
         )
         if m is None:
             err = dbc.Alert("Failed to create dispersion map. Please check your inputs.", color="danger")
-            return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+            return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
 
         if resolved_sources:
             result_map = add_facility_markers(m, resolved_sources)
@@ -447,17 +479,13 @@ def calculate_threat_zones(
             "thresholds": aegl_thresholds_ppm,
             "wind_dir": weather["wind_dir"],
             "stability_class": stability_class,
+            "x_max": int(x_max),
+            "y_max": int(y_max),
         }
 
-        # ── Generate & save standalone example script ──────────────────────────
+        # ── Generate standalone example script (available for download) ────────
         try:
-            from ..utils.script_generator import (
-                generate_threat_zones_script,
-                save_script_to_examples,
-            )
-            _project_root = os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            )
+            from ..utils.script_generator import generate_threat_zones_script
             _multi_sources = None
             if release_type == "multi":
                 _multi_sources = [
@@ -498,17 +526,18 @@ def calculate_threat_zones(
                 y_max=int(y_max),
                 multi_sources=_multi_sources,
             )
-            _saved_path = save_script_to_examples(_script, chemical, _project_root)
-            _script_filename = os.path.basename(_saved_path)
+            _chem_slug = re.sub(r"[^a-z0-9]+", "_", chemical.lower()).strip("_")[:40]
+            _script_filename = f"{_chem_slug}_threat_zones_{datetime.now().strftime('%Y%m%d_%H%M%S')}.py"
+            _generated_script_data = {"content": _script, "filename": _script_filename}
             status = dbc.Alert([
                 html.I(className="fas fa-check-circle", style={"marginRight": "0.5rem"}),
                 f"Threat zones calculated successfully! (Last updated: {timestamp})",
                 html.Br(),
-                html.I(className="fas fa-file-code", style={"marginRight": "0.4rem", "fontSize": "0.85rem"}),
-                html.Span(
-                    f"Example script saved → examples/{_script_filename}",
-                    style={"fontSize": "0.82rem", "fontStyle": "italic"},
-                ),
+                dbc.Button([
+                    html.I(className="fas fa-file-download", style={"marginRight": "0.4rem"}),
+                    f"Download Script ({_script_filename})",
+                ], id="btn-download-script", color="light", size="sm",
+                   style={"marginTop": "0.4rem", "fontSize": "0.82rem"}),
             ], color="success")
         except Exception as _sg_err:
             # Script generation is non-critical — keep original success status
@@ -516,14 +545,14 @@ def calculate_threat_zones(
             print(f"[script_generator] Warning: {_sg_err}\n{traceback.format_exc()}")
 
         stats = html.Div()
-        return map_component, stats, status, status, True, sim_conditions, zone_distances, concentration_data
+        return map_component, stats, status, status, True, sim_conditions, zone_distances, concentration_data, _generated_script_data
 
     except Exception as exc:
         err = dbc.Alert([
             html.I(className="fas fa-exclamation-triangle", style={"marginRight": "0.5rem"}),
             f"Error: {exc}",
         ], color="danger")
-        return _NO, _NO, err, err, _NO, _NO, _NO, _NO
+        return _NO, _NO, err, err, _NO, _NO, _NO, _NO, _NO
 
 
 def display_chemical_properties(n_clicks, n_clicks_top, chemical_name):
@@ -619,7 +648,7 @@ def auto_refresh_threat_zones(
             or not manual_calc_done):
         return _NO, _NO, _NO, _NO, _NO, _NO, _NO
 
-    (map_out, _, status_out, status_top, _, sim_cond, zone_dist, conc_data) = calculate_threat_zones(
+    (map_out, _, status_out, status_top, _, sim_cond, zone_dist, conc_data, _) = calculate_threat_zones(
         n_intervals, None,
         release_type, chemical,
         source_term_mode, terrain_roughness, receptor_height_m,
@@ -629,3 +658,16 @@ def auto_refresh_threat_zones(
         multi_lats, multi_lons, multi_rates, multi_heights,
     )
     return map_out, status_out, status_top, sim_cond, zone_dist, conc_data, conc_data  # last column = store update
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Script download callback
+# ─────────────────────────────────────────────────────────────────────────────
+
+def download_generated_script(n_clicks, script_data):
+    """Send the generated standalone script to the browser as a .py download."""
+    if not n_clicks or not script_data:
+        return dash.no_update
+    content = script_data.get("content", "")
+    filename = script_data.get("filename", "threat_zones_script.py")
+    return {"content": content, "filename": filename}

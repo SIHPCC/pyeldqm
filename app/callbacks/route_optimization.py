@@ -8,6 +8,8 @@ from dash import Input, Output, State, ALL, html
 import dash_bootstrap_components as dbc
 import numpy as np
 import folium
+import re
+from datetime import datetime
 
 
 def register(app):
@@ -22,7 +24,8 @@ def register(app):
          Output("route-ranking", "children"),
          Output("route-details", "children"),
          Output("route-status", "children"),
-         Output("route-status-top", "children")],
+         Output("route-status-top", "children"),
+         Output("route-generated-script-store", "data")],
         [Input("calc-route-btn", "n_clicks"),
          Input("calc-route-btn-top", "n_clicks")],
         [State("main-tabs", "active_tab"),
@@ -61,6 +64,13 @@ def register(app):
          State({"type": "multi-height", "index": ALL}, "value")],
         prevent_initial_call=True,
     )(calculate_route_optimization)
+
+    app.callback(
+        Output("route-script-download", "data"),
+        Input("btn-download-route-script", "n_clicks"),
+        State("route-generated-script-store", "data"),
+        prevent_initial_call=True,
+    )(download_route_script)
 
     app.callback(
         [Output("route-map-container", "children", allow_duplicate=True),
@@ -169,9 +179,9 @@ def calculate_route_optimization(
 ):
     _NO = dash.no_update
     if active_tab != "tab-route-optimization":
-        return [_NO] * 10
+        return [_NO] * 11
     if n_clicks is None and n_clicks_top is None:
-        return [_NO] * 10
+        return [_NO] * 11
 
     source_note = "Using Emergency Routes-specific parameters."
     if route_parameter_source_mode == "threat" and isinstance(threat_params_store, dict):
@@ -210,7 +220,7 @@ def calculate_route_optimization(
         from core.visualization import add_zone_polygons, ensure_layer_control, fit_map_to_polygons
         from core.evacuation import build_road_graph, classify_edges_with_risk, rank_shelters
 
-        map_component, _, status, _, _, _, _, concentration_data = calculate_threat_zones(
+        map_component, _, status, _, _, _, _, concentration_data, _ = calculate_threat_zones(
             n_clicks, n_clicks_top, release_type, chemical,
             source_term_mode, terrain_roughness, receptor_height_m, weather_mode,
             datetime_mode, specific_datetime, timezone_offset_hrs,
@@ -221,7 +231,7 @@ def calculate_route_optimization(
 
         if not concentration_data or concentration_data is dash.no_update:
             warn = dbc.Alert("Unable to generate threat zones for route optimization.", color="warning")
-            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn
+            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         X = np.array(concentration_data.get("X"))
         Y = np.array(concentration_data.get("Y"))
@@ -255,7 +265,7 @@ def calculate_route_optimization(
 
         if parsed_shelter_count is None or not float(parsed_shelter_count).is_integer() or parsed_shelter_count <= 0:
             warn = dbc.Alert("Number of shelters must be an integer greater than zero.", color="warning")
-            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn
+            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         shelter_count = int(parsed_shelter_count)
         route_shelter_names = route_shelter_names or []
@@ -273,7 +283,7 @@ def calculate_route_optimization(
 
         if not shelters_catalog:
             warn = dbc.Alert("No valid shelter coordinates provided.", color="warning")
-            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn
+            return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         m = folium.Map(location=[center_lat, center_lon], zoom_start=13, tiles="OpenStreetMap")
         folium.TileLayer(
@@ -346,12 +356,82 @@ def calculate_route_optimization(
 
         ranking_view = html.Ul(ranking_items, style={"marginBottom": "0"}) if ranking_items else "---"
 
+        _route_script_data = _NO
+        _route_filename = ""
+        try:
+            from ..utils.script_generator import generate_route_script
+            from ..components.tabs.threat_zones import CHEMICAL_OPTIONS
+
+            _chem_props_found = CHEMICAL_OPTIONS.get(chemical, {})
+            _mw = _chem_props_found.get("molecular_weight") or _chem_props_found.get("MW") or 17.03
+            _multi_sources_route = None
+            if release_type == "multi":
+                _multi_sources_route = [
+                    {
+                        "lat": mlat,
+                        "lon": mlon,
+                        "name": f"Source {i + 1}",
+                        "height": float(mheight or 3.0),
+                        "rate": float(mrate or 0.0),
+                    }
+                    for i, (mlat, mlon, mrate, mheight) in enumerate(
+                        zip(multi_lats or [], multi_lons or [], multi_rates or [], multi_heights or [])
+                    )
+                    if mlat is not None and mlon is not None
+                ]
+
+            _route_script = generate_route_script(
+                chemical=chemical,
+                molecular_weight=float(_mw),
+                release_type=release_type,
+                source_term_mode=source_term_mode,
+                lat=float(lat or 0),
+                lon=float(lon or 0),
+                release_rate=float(release_rate or 0.0),
+                tank_height=float(tank_height or 3.0),
+                duration_minutes=float(duration_minutes or 30.0),
+                mass_released_kg=float(mass_released_kg or 500.0),
+                terrain_roughness=terrain_roughness or "URBAN",
+                receptor_height_m=float(receptor_height_m or 1.5),
+                weather_mode=weather_mode or "manual",
+                wind_speed=float(wind_speed or 3),
+                wind_dir=float(wind_dir or 90),
+                temperature_c=float(temp or 25),
+                humidity_pct=float(humidity or 60),
+                cloud_cover_pct=float(cloud_cover or 25),
+                timezone_offset_hrs=float(timezone_offset_hrs or 5),
+                datetime_mode=datetime_mode or "now",
+                specific_datetime=specific_datetime,
+                aegl_thresholds=thresholds or {"AEGL-1": 30, "AEGL-2": 160, "AEGL-3": 1100},
+                x_max=int(concentration_data.get("x_max", 12000)),
+                y_max=int(concentration_data.get("y_max", 4000)),
+                route_radius_m=route_radius,
+                route_proximity_buffer_m=route_buffer,
+                show_unsafe_roads=show_unsafe,
+                shelters=[{"lat": slat, "lon": slon, "name": sname} for slat, slon, sname in shelters_catalog],
+                multi_sources=_multi_sources_route,
+            )
+
+            _chem_slug = re.sub(r"[^a-z0-9]+", "_", chemical.lower()).strip("_")[:40]
+            _route_filename = f"{_chem_slug}_route_optimization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.py"
+            _route_script_data = {"content": _route_script, "filename": _route_filename}
+        except Exception as _route_sg_err:
+            import traceback
+            print(f"[route_script_generator] Warning: {_route_sg_err}\n{traceback.format_exc()}")
+
         detail = dbc.Alert([
             html.Strong("Emergency route optimization completed."),
             html.Br(),
             html.Small(f"Mode: {route_parameter_source_mode}. {source_note}"),
             html.Br(),
             html.Small(f"Road segments classified: {len(safe_gdf)} safe, {len(unsafe_gdf)} unsafe."),
+            html.Br(),
+            dbc.Button([
+                html.I(className="fas fa-file-download", style={"marginRight": "0.4rem"}),
+                f"Download Script ({_route_filename})" if _route_script_data is not _NO else "Download Script",
+            ], id="btn-download-route-script", color="light", size="sm",
+               style={"marginTop": "0.4rem", "fontSize": "0.82rem"},
+               disabled=(_route_script_data is _NO)),
         ], color="success")
 
         status_msg = dbc.Alert([
@@ -362,12 +442,21 @@ def calculate_route_optimization(
         return (
             route_map, best_name, best_distance, best_cost,
             f"{len(safe_gdf):,}", f"{len(unsafe_gdf):,}",
-            ranking_view, detail, status_msg, status_msg,
+            ranking_view, detail, status_msg, status_msg, _route_script_data,
         )
     except Exception as exc:
         error_alert = dbc.Alert(f"Error in Emergency Routes calculation: {exc}", color="danger")
         return (dash.no_update, "---", "---", "---", "---", "---", "---",
-                error_alert, error_alert, error_alert)
+                error_alert, error_alert, error_alert, _NO)
+
+
+def download_route_script(n_clicks, script_data):
+    """Send the generated Emergency Routes script to the browser as a .py file download."""
+    if not n_clicks or not script_data:
+        return dash.no_update
+    content = script_data.get("content", "")
+    filename = script_data.get("filename", "route_optimization_script.py")
+    return {"content": content, "filename": filename}
 
 
 def reset_route_analysis(n_clicks, active_tab):
