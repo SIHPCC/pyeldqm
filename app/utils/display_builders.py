@@ -31,6 +31,7 @@ def create_simulation_conditions_display(
     duration_minutes=None,
     mass_released_kg=None,
     receptor_height_m=1.5,
+    phase_label=None,
 ):
     """Return an ``html.Div`` summarising meteorology + release parameters."""
     wind_speed = weather.get("wind_speed", 0)
@@ -82,6 +83,7 @@ def create_simulation_conditions_display(
             ("Wind Speed", f"{wind_speed:.1f} m/s"),
             ("Wind Direction", f"{wind_dir:.0f}°"),
             ("Temperature", f"{temp_c:.1f}°C"),
+            ("Phase at Ambient", phase_label or "—"),
             ("Humidity", f"{humidity:.0f}%"),
             ("Cloud Cover", f"{cloud_cover:.0f}%"),
             ("Stability Class", stability_class),

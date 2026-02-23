@@ -8,6 +8,7 @@ from .zone_extraction import (
     parse_threshold,
     bilinear_interpolate_coords
 )
+from .chemical_phase import determine_phase
 from .live_loop_manager import LiveLoopManager, create_live_loop
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     'extract_threat_zones_from_concentration',
     'parse_threshold',
     'bilinear_interpolate_coords',
+    'determine_phase',
     'LiveLoopManager',
     'create_live_loop'
 ]

@@ -207,8 +207,11 @@ def calculate_par_results(
     )
 
     if not concentration_data or concentration_data is dash.no_update:
-        detail = dbc.Alert("PAR calculation could not complete. Please review inputs and try again.", color="warning")
-        return map_component, "---", "---", "---", detail, "---", "---", "---", "---", "---", "---", "---", "", _NO
+        warn = status if status not in (dash.no_update, None) else dbc.Alert(
+            "PAR calculation could not complete. Please review inputs and try again.",
+            color="warning",
+        )
+        return map_component, "---", "---", "---", warn, "---", "---", "---", "---", "---", "---", "---", "", _NO
 
     try:
         X = np.array(concentration_data.get("X"))

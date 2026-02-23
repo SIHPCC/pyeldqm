@@ -230,7 +230,10 @@ def calculate_route_optimization(
         )
 
         if not concentration_data or concentration_data is dash.no_update:
-            warn = dbc.Alert("Unable to generate threat zones for route optimization.", color="warning")
+            warn = status if status not in (dash.no_update, None) else dbc.Alert(
+                "Unable to generate threat zones for route optimization.",
+                color="warning",
+            )
             return map_component, "---", "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         X = np.array(concentration_data.get("X"))

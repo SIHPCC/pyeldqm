@@ -206,7 +206,10 @@ def analyze_shelters(
         )
 
         if not concentration_data or concentration_data is dash.no_update:
-            warn = dbc.Alert("Unable to generate threat zones for shelter analysis.", color="warning")
+            warn = status if status not in (dash.no_update, None) else dbc.Alert(
+                "Unable to generate threat zones for shelter analysis.",
+                color="warning",
+            )
             return map_component, "---", "---", "---", "---", "---", warn, warn, warn, _NO
 
         X = np.array(concentration_data.get("X"))

@@ -172,6 +172,7 @@ def calculate_threat_zones(
             fit_map_to_polygons,
         )
         from core.utils.features import setup_computational_grid
+        from core.utils.chemical_phase import determine_phase
         from core.utils.zone_extraction import extract_zones
         from ..components.tabs.threat_zones import CHEMICAL_OPTIONS
         from ..utils.display_builders import (
@@ -282,6 +283,27 @@ def calculate_threat_zones(
                 "cloud_cover": (cloud_cover or 30) / 100.0,
                 "source": "manual",
             }
+
+        # ── Phase check (Gaussian model assumes gas) ───────────────────────
+        temp_c = (weather.get("temperature_K") or 298.15) - 273.15
+        phase_info = determine_phase(chemical, temp_c)
+        if phase_info.get("is_gas") is True:
+            phase_label = "Gas"
+        elif phase_info.get("is_gas") is False:
+            phase_label = phase_info.get("phase", "Non-gas").title()
+        else:
+            phase_label = "Unknown"
+        if phase_info.get("is_gas") is False:
+            phase = phase_info.get("phase", "non-gas")
+            boil_c = phase_info.get("boiling_c")
+            boil_note = f" (boiling point: {boil_c:.1f} °C)" if isinstance(boil_c, (int, float)) else ""
+            warn = dbc.Alert(
+                f"{chemical} is {phase} at {temp_c:.1f} °C{boil_note}. "
+                "Gaussian dispersion is valid for gas phase only. "
+                "Adjust conditions or choose a gas-phase chemical.",
+                color="warning",
+            )
+            return _NO, _NO, warn, warn, _NO, _NO, _NO, _NO, _NO
 
         # ── Dispersion ─────────────────────────────────────────────────────────
         if release_type == "single":
@@ -436,6 +458,7 @@ def calculate_threat_zones(
                 duration_minutes=duration_minutes,
                 mass_released_kg=mass_released_kg,
                 receptor_height_m=receptor_height_m,
+                phase_label=phase_label,
             )
             zone_distances = create_zone_distances_display(
                 threat_zones=threat_zones,
@@ -460,6 +483,7 @@ def calculate_threat_zones(
                 duration_minutes=duration_minutes,
                 mass_released_kg=mass_released_kg,
                 receptor_height_m=receptor_height_m,
+                phase_label=phase_label,
             )
             sources_for_distances = [
                 {"lat": mlat, "lon": mlon, "name": f"Source {i + 1}"}
