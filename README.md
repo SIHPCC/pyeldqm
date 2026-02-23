@@ -32,31 +32,15 @@ optimisation, and an interactive Dash web application — all in pure Python.
 
 ## Installation
 
-### Minimal (core library only)
-
 ```bash
 pip install pyeldqm
 ```
 
-### With the Dash web application
+> **Geospatial extras** (osmnx, geopandas, rasterio) require GDAL and are optional.
+> Install them with `pip install "pyeldqm[geo]"` if you need evacuation routing or
+> population raster support.
 
-```bash
-pip install "pyeldqm[app]"
-```
-
-### With geospatial extras (osmnx, geopandas, rasterio …)
-
-```bash
-pip install "pyeldqm[geo]"
-```
-
-### Full install
-
-```bash
-pip install "pyeldqm[full]"
-```
-
-### Development install (editable)
+### Development install
 
 ```bash
 git clone https://github.com/SIHPCC/pyeldqm.git
@@ -64,13 +48,7 @@ cd pyeldqm
 python -m venv .venv
 # Windows:  .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
-pip install -e ".[full]"
-```
-
-### Install directly from GitHub
-
-```bash
-pip install "pyeldqm[app] @ git+https://github.com/SIHPCC/pyeldqm.git"
+pip install -e .
 ```
 
 ---
