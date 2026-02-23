@@ -47,6 +47,8 @@ optimisation, and an interactive Dash web application — all in pure Python.
 | ![PAR Analysis](docs/images/par_analysis.png) | Population At Risk analysis |
 | ![Emergency Routes](docs/images/emergency_routes.png) | Emergency route optimization |
 | ![Sensor Placement](docs/images/sensor_placement.png) | Sensor network optimization |
+| ![Health Impact](docs/images/health_impact.png) | Health impact threshold zones |
+| ![Shelter Status](docs/images/shelter_status.png) | Shelter-in-place vs evacuation guidance |
 
 ---
 
