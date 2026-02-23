@@ -32,7 +32,19 @@ optimisation, and an interactive Dash web application — all in pure Python.
 
 ## Installation
 
+> **Recommended:** Install pyELDQM inside a dedicated virtual environment to avoid
+> package conflicts with other projects on your system.
+
 ```bash
+# 1. Create and activate a virtual environment
+python -m venv pyeldqm-env
+
+# Windows
+pyeldqm-env\Scripts\activate
+# macOS / Linux
+source pyeldqm-env/bin/activate
+
+# 2. Install pyELDQM
 pip install pyeldqm
 ```
 
