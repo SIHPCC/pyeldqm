@@ -2,7 +2,7 @@
 
 **Python-Based Real-Time Emergency Leakage and Dispersion Quantification Model**
 
-[![CI](https://github.com/your-org/pyeldqm/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/pyeldqm/actions/workflows/ci.yml)
+[![CI](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml/badge.svg)](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -59,12 +59,18 @@ pip install "pyeldqm[full]"
 ### Development install (editable)
 
 ```bash
-git clone https://github.com/your-org/pyeldqm.git
+git clone https://github.com/SIHPCC/pyeldqm.git
 cd pyeldqm
 python -m venv .venv
 # Windows:  .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
 pip install -e ".[full]"
+```
+
+### Install directly from GitHub
+
+```bash
+pip install "pyeldqm[app] @ git+https://github.com/SIHPCC/pyeldqm.git"
 ```
 
 ---
@@ -180,4 +186,3 @@ pull-request workflow.
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
