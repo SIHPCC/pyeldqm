@@ -39,19 +39,6 @@ optimisation, and an interactive Dash web application — all in pure Python.
 
 ---
 
-## Gallery
-
-| Screenshot | Description |
-|---|---|
-| ![Threat Zones](docs/images/threat_zones.png) | Chemical Threat Zones map |
-| ![PAR Analysis](docs/images/par_analysis.png) | Population At Risk analysis |
-| ![Emergency Routes](docs/images/emergency_routes.png) | Emergency route optimization |
-| ![Sensor Placement](docs/images/sensor_placement.png) | Sensor network optimization |
-| ![Health Impact](docs/images/health_impact.png) | Health impact threshold zones |
-| ![Shelter Status](docs/images/shelter_status.png) | Shelter-in-place vs evacuation guidance |
-
----
-
 ## Installation
 
 > **Recommended:** Install pyELDQM inside a dedicated virtual environment to avoid
@@ -170,27 +157,54 @@ Pre-built scenarios live in `configs/`:
 
 ```
 pyELDQM/
-├── core/                        # Pure-Python scientific library
-│   ├── dispersion_models/       # Gaussian + dense-gas models
-│   ├── fire_models/             # Pool fire, jet fire, flash fire
-│   ├── meteorology/             # Stability, wind profile, solar radiation
-│   ├── source_models/           # Pipeline, tank, puddle source terms
-│   ├── evacuation/              # Route optimisation (osmnx)
-│   ├── population/              # Population raster I/O
-│   ├── utils/                   # geo_constants, sensor optimisation, …
-│   └── visualization/           # Folium map builders
 ├── app/                         # Dash web-application layer
+│   ├── assets/                  # CSS/assets
 │   ├── callbacks/               # Dash callback modules
 │   ├── components/              # Reusable UI components
-│   └── layout/                  # Page layout (tabs, sidebar, header)
+│   ├── layout/                  # Page layout (tabs, sidebar, header)
+│   └── utils/                   # App utilities
+├── cache/                       # Runtime cache files
 ├── configs/                     # Example YAML scenarios
+├── core/                        # Pure-Python scientific library
+│   ├── dispersion_models/       # Gaussian + dense-gas models
+│   ├── evacuation/              # Route optimisation (osmnx)
+│   ├── fire_models/             # Pool fire, jet fire, flash fire
+│   ├── geography/               # Geographic helpers
+│   ├── meteorology/             # Stability, wind profile, solar radiation
+│   ├── population/              # Population raster I/O
+│   ├── protective_actions/      # Protective action models
+│   ├── source_models/           # Pipeline, tank, puddle source terms
+│   ├── utils/                   # Shared utilities
+│   └── visualization/           # Folium map builders
 ├── data/                        # Reference data (not in wheel)
-├── tests/                       # pytest test suite
+├── docs/                        # Documentation assets
+│   └── images/                  # Gallery screenshots
 ├── examples/                    # Standalone usage scripts
-├── pyproject.toml               # Packaging & tool configuration
+├── outputs/                     # Generated outputs
+├── tests/                       # pytest test suite
+├── validation/                  # Validation notebooks/scripts
 ├── CHANGELOG.md
-└── CONTRIBUTING.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── MANIFEST.in
+├── README.md
+├── pyproject.toml               # Packaging & tool configuration
+├── requirements.txt
+└── run_app.py
 ```
+
+---
+
+## Gallery
+
+| Screenshot | Description |
+|---|---|
+| ![Threat Zones](docs/images/threat_zones.png) | Chemical Threat Zones map |
+| ![PAR Analysis](docs/images/par_analysis.png) | Population At Risk analysis |
+| ![Emergency Routes](docs/images/emergency_routes.png) | Emergency route optimization |
+| ![Sensor Placement](docs/images/sensor_placement.png) | Sensor network optimization |
+| ![Health Impact](docs/images/health_impact.png) | Health impact threshold zones |
+| ![Shelter Status](docs/images/shelter_status.png) | Shelter-in-place vs evacuation guidance |
 
 ---
 
