@@ -84,7 +84,7 @@ py-modules = ["run_app", "main"]
 
 [tool.setuptools.package-data]
 "app" = ["assets/*.css"]
-""    = ["configs/*.yaml"]
+"*"   = ["configs/*.yaml"]
 
 # =============================================================================
 # pytest
