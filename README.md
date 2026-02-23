@@ -39,6 +39,17 @@ optimisation, and an interactive Dash web application — all in pure Python.
 
 ---
 
+## Gallery
+
+| Screenshot | Description |
+|---|---|
+| ![Threat Zones](docs/images/threat_zones.png) | Chemical Threat Zones map |
+| ![PAR Analysis](docs/images/par_analysis.png) | Population At Risk analysis |
+| ![Emergency Routes](docs/images/emergency_routes.png) | Emergency route optimization |
+| ![Sensor Placement](docs/images/sensor_placement.png) | Sensor network optimization |
+
+---
+
 ## Installation
 
 > **Recommended:** Install pyELDQM inside a dedicated virtual environment to avoid
