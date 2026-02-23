@@ -1,0 +1,114 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# =============================================================================
+# Project metadata
+# =============================================================================
+[project]
+name = "pyeldqm"
+version = "0.1.0"
+description = "Python-based real-time emergency leakage and dispersion quantification model"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = [
+    "dispersion", "emergency", "hazmat", "chemical",
+    "AEGL", "ALOHA", "atmospheric", "consequence-modelling",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.7",
+    "matplotlib>=3.3",
+    "scikit-learn>=1.0",
+    "PyYAML>=5.4",
+    "pandas>=1.3",
+    "requests>=2.25",
+    "pytz>=2021.1",
+    "timezonefinder>=5.2",
+    "geopy>=2.2",
+    "pyproj>=3.0",
+    "networkx>=2.6",
+    "folium>=0.14",
+    "branca>=0.6",
+    "shapely>=1.7",
+    "plotly>=5.17",
+]
+
+[project.optional-dependencies]
+# Dash web application
+app = [
+    "dash>=2.14",
+    "dash-bootstrap-components>=1.5",
+]
+# Heavy GIS dependencies (GDAL-based)
+geo = [
+    "rasterio>=1.2",
+    "osmnx>=1.3",
+    "geopandas>=0.9",
+    "scikit-image>=0.19",
+    "elevation>=1.0",
+    "pyowm>=3.0",
+]
+# Everything
+full = ["pyeldqm[app,geo]"]
+
+# =============================================================================
+# Entry points  — single Dash web-app entry point only
+# =============================================================================
+[project.scripts]
+pyeldqm-app = "run_app:main"
+
+[project.urls]
+Homepage = "https://github.com/username/pyeldqm"
+Issues   = "https://github.com/username/pyeldqm/issues"
+
+# =============================================================================
+# Package discovery
+# =============================================================================
+[tool.setuptools.packages.find]
+include  = ["core*", "app*"]
+exclude  = ["tests*", "examples*", "validation*"]
+
+[tool.setuptools]
+py-modules = ["run_app", "main"]
+
+[tool.setuptools.package-data]
+"app" = ["assets/*.css"]
+""    = ["configs/*.yaml"]
+
+# =============================================================================
+# pytest
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths  = ["tests"]
+pythonpath = ["."]
+addopts    = "--tb=short -q"
+
+# =============================================================================
+# ruff (linter + formatter)
+# =============================================================================
+[tool.ruff]
+line-length    = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*"   = ["E", "W", "F", "I"]
+"tests/*"      = ["F811"]
+"validation/*" = ["E", "W", "F"]

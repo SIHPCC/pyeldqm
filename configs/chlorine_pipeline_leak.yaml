@@ -1,0 +1,14 @@
+scenario_type: pipeline
+meteorology:
+  wind_speed: 5.0
+  z_ref: 3.0
+  z0: 0.03
+  stability_class: D
+source:
+  pipe_radius_m: 0.05
+  length_m: 200.0
+  hole_radius_m: 0.003
+  duration_s: 3600
+chemical:
+  name: Chlorine
+  MW_g_mol: 70.906

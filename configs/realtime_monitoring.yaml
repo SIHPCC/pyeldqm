@@ -1,0 +1,10 @@
+scenario_type: gaussian
+realtime: true
+meteorology:
+  source: latest
+source:
+  release_rate_g_s: 500
+  duration_s: 300
+  height_m: 2
+geometry:
+  roughness: URBAN

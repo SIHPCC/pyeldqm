@@ -1,0 +1,10 @@
+scenario_type: fire_pool
+meteorology:
+  wind_speed: 2.0
+  z_ref: 10.0
+  z0: 0.3
+  stability_class: D
+source:
+  pool_diameter_m: 30.0
+outputs:
+  target_flux_kw_m2: 12.5

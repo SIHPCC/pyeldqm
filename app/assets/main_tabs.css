@@ -1,0 +1,5 @@
+#main-tabs .nav-link,
+#main-tabs .nav-link.active,
+#main-tabs .nav-link[aria-selected="true"] {
+    color: #000000 !important;
+}

@@ -1,0 +1,11 @@
+# Include YAML scenario configurations
+recursive-include configs *.yaml
+
+# Include Dash CSS assets
+recursive-include app/assets *.css
+
+# Exclude large / generated content
+exclude outputs
+prune  outputs
+prune  cache
+prune  data

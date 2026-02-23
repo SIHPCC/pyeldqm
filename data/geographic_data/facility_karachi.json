@@ -1,0 +1,16 @@
+{
+  "facility_name": "Karachi Chemical Complex",
+  "latitude": 24.85,
+  "longitude": 67.05,
+  "elevation_m": 12.0,
+  "timezone": "Asia/Karachi",
+  "terrain": "flat",
+  "land_use": "industrial",
+  "roughness": "URBAN",
+  "country": "Pakistan",
+  "city": "Karachi",
+  "date": "2026-01-12",
+  "time": "2142",
+  "datetime_local": "2026-01-12 21:42:29 PKT",
+  "notes": "Coastal petrochemical facility"
+}

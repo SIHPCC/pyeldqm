@@ -1,0 +1,42 @@
+# Byte-compiled / optimised / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Binary archives
+*.rar
+*.zip
+
+# Package / distribution
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Runtime outputs & scratch
+outputs/
+cache/
+*.log
+
+# Large GIS / raster & geospatial binary data
+# (download separately — see data/population/download_worldpop_and_clip.py)
+*.tif
+*.tiff
+*.geotiff
+*.nc
+*.h5
+*.hdf5
+data/population/
+
+# Environment secrets
+.env
+
+# IDEs
+.idea/
+*.code-workspace

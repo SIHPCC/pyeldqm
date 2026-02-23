@@ -1,0 +1,742 @@
+"""
+app/utils/script_generator.py
+==============================
+Generates a standalone, runnable Python example script from the exact
+inputs used in a Threat Zones calculation inside the Dash app.
+
+The generated script mirrors the full end-to-end computation (dispersion
+model, map creation, zone extraction) so it can be run independently of
+the Dash application.
+"""
+
+from __future__ import annotations
+
+import os
+import textwrap
+from datetime import datetime
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def generate_threat_zones_script(
+    *,
+    chemical: str,
+    molecular_weight: float,
+    release_type: str,
+    source_term_mode: str,
+    lat: float,
+    lon: float,
+    release_rate: float,
+    tank_height: float,
+    duration_minutes: float,
+    mass_released_kg: float,
+    terrain_roughness: str,
+    receptor_height_m: float,
+    weather_mode: str,
+    wind_speed: float,
+    wind_dir: float,
+    temperature_c: float,
+    humidity_pct: float,
+    cloud_cover_pct: float,
+    timezone_offset_hrs: float,
+    datetime_mode: str,
+    specific_datetime: str | None,
+    aegl_thresholds: dict,
+    x_max: int,
+    y_max: int,
+    multi_sources: list[dict] | None = None,
+) -> str:
+    """Return the full text of a standalone Python script.
+
+    Parameters
+    ----------
+    All parameters mirror the sidebar inputs collected by the app callback.
+    multi_sources : list of dicts with keys lat, lon, rate, height, name
+        Only used when release_type == 'multi'.
+    """
+
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    chem_slug = _slug(chemical)
+    rel_type_label = "Multi-Source" if release_type == "multi" else "Single Source"
+
+    # ── Weather block ───────────────────────────────────────────────────────
+    if weather_mode == "auto":
+        weather_block = textwrap.dedent(f"""\
+            # Fetch live weather from Open-Meteo API
+            weather = get_weather(
+                latitude=SOURCE_LAT,
+                longitude=SOURCE_LON,
+                source="open_meteo",
+            )
+            print(f"  Wind speed : {{weather['wind_speed']:.2f}} m/s")
+            print(f"  Wind dir   : {{weather['wind_dir']:.1f}}°")
+            print(f"  Temperature: {{weather['temperature_K'] - 273.15:.1f}} °C")
+        """)
+    else:
+        weather_block = textwrap.dedent(f"""\
+            # Manual weather conditions (as entered in the app)
+            weather = {{
+                "wind_speed"    : WIND_SPEED,
+                "wind_dir"      : WIND_DIRECTION,
+                "temperature_K" : TEMPERATURE_C + 273.15,
+                "humidity"      : HUMIDITY / 100.0,
+                "cloud_cover"   : CLOUD_COVER / 100.0,
+                "source"        : "manual",
+            }}
+        """)
+
+    # ── Datetime block ──────────────────────────────────────────────────────
+    if datetime_mode == "specific" and specific_datetime:
+        dt_block = f'simulation_datetime = datetime.fromisoformat("{specific_datetime}")'
+    else:
+        dt_block = 'simulation_datetime = datetime.now()'
+
+    # ── Source-term block (single vs multi) ─────────────────────────────────
+    if release_type == "single":
+        dispersion_block = _single_source_block(source_term_mode, duration_minutes)
+    else:
+        dispersion_block = _multi_source_block(
+            source_term_mode, multi_sources or [], duration_minutes
+        )
+
+    # ── Multi-source config section ─────────────────────────────────────────
+    multi_source_cfg = ""
+    if release_type == "multi" and multi_sources:
+        lines = ["RELEASE_SOURCES = ["]
+        for i, s in enumerate(multi_sources):
+            lines.append(f"    {{  # Source {i+1}")
+            lines.append(f'        "lat"   : {s["lat"]},')
+            lines.append(f'        "lon"   : {s["lon"]},')
+            lines.append(f'        "name"  : "{s.get("name", f"Source {i+1}")}",')
+            lines.append(f'        "height": {s["height"]},')
+            lines.append(f'        "rate"  : {s["rate"]},')
+            lines.append(f'        "color" : "{_source_color(i)}",')
+            lines.append("    },")
+        lines.append("]")
+        multi_source_cfg = "\n".join(lines)
+    else:
+        multi_source_cfg = "# No additional sources (single-source mode)"
+
+    # ── Weather import ──────────────────────────────────────────────────────
+    weather_import = (
+        "from core.meteorology.realtime_weather import get_weather"
+        if weather_mode == "auto"
+        else "# from core.meteorology.realtime_weather import get_weather  # not needed for manual weather"
+    )
+
+    # ── Assemble script section by section ──────────────────────────────────
+    # We concatenate sections explicitly rather than using one big f-string so
+    # that multi-line substituted blocks (dispersion_block, weather_block, …)
+    # retain their own indentation correctly.  Each "fixed" section uses its
+    # own textwrap.dedent so it has zero leading indent.
+    import re as _re
+
+    def _d(s):
+        """Dedent a local triple-quoted string."""
+        return textwrap.dedent(s).lstrip("\n")
+
+    s_docstring = _d(f"""\
+        \"\"\"
+        Chemical Threat Zones Calculation — Auto-Generated Example
+        ===========================================================
+        Generated by pyELDQM Dash app on {now_str}
+
+        Scenario   : {rel_type_label} Release
+        Chemical   : {chemical}
+        Location   : {lat}, {lon}
+        Weather    : {"Real-time (Open-Meteo)" if weather_mode == "auto" else "Manual"}
+
+        This script is a complete, self-contained reproduction of the threat-zone
+        calculation that was performed inside the pyELDQM Dash application,
+        including all outputs: chemical properties, simulation conditions, zone
+        distances, interactive map, and 5 analytics charts.
+        Run it directly from the ``examples/`` directory:
+
+            python {chem_slug}_threat_zones.py
+
+        Outputs (saved to outputs/threat_zones/)
+        -----------------------------------------
+        - {chem_slug}_threat_zones_<ts>.html         — interactive Folium map
+        - {chem_slug}_analytics_centerline_<ts>.html — centerline concentration profile
+        - {chem_slug}_analytics_crosswind_<ts>.html  — crosswind concentration profiles
+        - {chem_slug}_analytics_contour_<ts>.html    — 2D spatial concentration map
+        - {chem_slug}_analytics_statistics_<ts>.html — concentration statistics & impact area
+        - {chem_slug}_analytics_distance_<ts>.html   — max concentration vs distance
+
+        Dependencies
+        ------------
+            pip install numpy folium scikit-image branca requests plotly shapely
+
+        Notes
+        -----
+        - Adjust the configuration constants under CONFIGURATION to explore scenarios.
+        \"\"\"
+    """)
+
+    s_imports = _d(f"""\
+        # ============================================================================
+        # IMPORTS
+        # ============================================================================
+
+        import sys
+        import os
+        import webbrowser
+        from math import radians, cos, sin, asin, sqrt
+        from pathlib import Path
+        from datetime import datetime
+
+        import numpy as np
+
+        # -- Add project root to Python path ----------------------------------------
+        _here = os.path.dirname(os.path.abspath(__file__))
+        _root = os.path.dirname(_here)
+        if _root not in sys.path:
+            sys.path.insert(0, _root)
+
+        # -- pyELDQM core imports ----------------------------------------------------
+        from core.dispersion_models.gaussian_model import (
+            calculate_gaussian_dispersion,
+            multi_source_concentration,
+        )
+        from core.meteorology.stability import get_stability_class
+        from core.meteorology.wind_profile import wind_speed as wind_profile
+        from core.chemical_database import ChemicalDatabase
+        {weather_import}
+        from core.visualization.folium_maps import (
+            create_dispersion_map,
+            meters_to_latlon,
+            add_facility_markers,
+            calculate_optimal_zoom_level,
+        )
+        from core.visualization import (
+            add_zone_polygons,
+            ensure_layer_control,
+            fit_map_to_polygons,
+        )
+        from core.utils.features import setup_computational_grid
+        from core.utils.zone_extraction import extract_zones
+        from app.utils.plot_builders import (
+            create_centerline_concentration_plot,
+            create_crosswind_concentration_plot,
+            create_concentration_contour_plot,
+            create_concentration_statistics,
+            create_distance_vs_concentration_plot,
+        )
+    """)
+
+    s_config = _d(f"""\
+        # ============================================================================
+        # CONFIGURATION
+        # ============================================================================
+
+        # -- Chemical ----------------------------------------------------------------
+        CHEMICAL_NAME      = {chemical!r}
+        MOLECULAR_WEIGHT   = {molecular_weight}          # g/mol
+
+        # -- Release location --------------------------------------------------------
+        SOURCE_LAT         = {lat}
+        SOURCE_LON         = {lon}
+        TIMEZONE_OFFSET_HRS = {timezone_offset_hrs}
+
+        # -- Release parameters ------------------------------------------------------
+        RELEASE_TYPE       = {release_type!r}            # "single" or "multi"
+        SOURCE_TERM_MODE   = {source_term_mode!r}        # "continuous" or "instantaneous"
+        RELEASE_RATE       = {release_rate}              # g/s  (continuous mode)
+        TANK_HEIGHT        = {tank_height}               # m above ground
+        DURATION_MINUTES   = {duration_minutes}          # release duration
+        MASS_RELEASED_KG   = {mass_released_kg}          # total mass (instantaneous mode)
+        TERRAIN_ROUGHNESS  = {terrain_roughness!r}       # "URBAN" or "RURAL"
+        RECEPTOR_HEIGHT_M  = {receptor_height_m}         # breathing-zone height (m)
+
+        # -- Weather (used only when WEATHER_MODE == "manual") -----------------------
+        WEATHER_MODE       = {weather_mode!r}            # "manual" or "auto"
+        WIND_SPEED         = {wind_speed}                # m/s
+        WIND_DIRECTION     = {wind_dir}                  # degrees (0=N, 90=E, 180=S, 270=W)
+        TEMPERATURE_C      = {temperature_c}             # degrees C
+        HUMIDITY           = {humidity_pct}              # %
+        CLOUD_COVER        = {cloud_cover_pct}           # %
+
+        # -- AEGL hazard thresholds (ppm) --------------------------------------------
+        AEGL_THRESHOLDS = {{
+            "AEGL-1": {aegl_thresholds.get("AEGL-1", 30)},     # Mild / noticeable effects
+            "AEGL-2": {aegl_thresholds.get("AEGL-2", 160)},    # Irreversible effects
+            "AEGL-3": {aegl_thresholds.get("AEGL-3", 1100)},   # Life-threatening
+        }}
+
+        # -- Computational grid ------------------------------------------------------
+        X_MAX = {x_max}     # m  (downwind extent)
+        Y_MAX = {y_max}     # m  (crosswind extent)
+        NX    = 500
+        NY    = 500
+
+    """)
+
+    # multi_source_cfg already at correct indent (0-based)
+    s_sources = "# -- Multi-source definitions (used only when RELEASE_TYPE == 'multi') --\n"
+    s_sources += multi_source_cfg + "\n\n"
+
+    s_chem_props = _d("""\
+        # ============================================================================
+        # CHEMICAL PROPERTIES
+        # ============================================================================
+        print("=" * 60)
+        print("CHEMICAL PROPERTIES")
+        print("=" * 60)
+        try:
+            _db = ChemicalDatabase()
+            _chem_data = next(
+                (c for c in _db.get_all_chemicals() if c.get("name") == CHEMICAL_NAME),
+                None,
+            )
+            if _chem_data:
+                _prop_fields = [
+                    ("Name",                "name"),
+                    ("Molecular Weight",    "molecular_weight"),
+                    ("Boiling Point (K)",   "boiling_point_K"),
+                    ("Density (kg/m3)",     "density_kgm3"),
+                    ("Vapor Pressure (kPa)","vapor_pressure_kPa"),
+                    ("IDLH (ppm)",          "idlh_ppm"),
+                    ("LC50 (ppm)",          "lc50_ppm"),
+                    ("AEGL-1 (60 min)",     "aegl1_60min"),
+                    ("AEGL-2 (60 min)",     "aegl2_60min"),
+                    ("AEGL-3 (60 min)",     "aegl3_60min"),
+                    ("ERPG-1",              "erpg1"),
+                    ("ERPG-2",              "erpg2"),
+                    ("ERPG-3",              "erpg3"),
+                ]
+                for label, key in _prop_fields:
+                    val = _chem_data.get(key)
+                    if val is not None and val != "" and val != 0:
+                        print(f"  {label:<28}: {val}")
+            else:
+                print(f"  Molecular Weight : {MOLECULAR_WEIGHT} g/mol")
+                print(f"  (Full database record not found for '{CHEMICAL_NAME}')")
+        except Exception as _e:
+            print(f"  Molecular Weight : {MOLECULAR_WEIGHT} g/mol")
+            print(f"  (Could not query database: {_e})")
+        print()
+
+    """)
+
+    s_datetime = _d(f"""\
+        # ============================================================================
+        # SIMULATION DATETIME
+        # ============================================================================
+        {dt_block}
+        print(f"Simulation datetime : {{simulation_datetime}}")
+
+    """)
+
+    s_weather_header = _d("""\
+        # ============================================================================
+        # WEATHER CONDITIONS
+        # ============================================================================
+        print("\\nFetching / setting weather conditions ...")
+    """)
+
+    s_stability = _d("""\
+        # ============================================================================
+        # STABILITY CLASS
+        # ============================================================================
+        stability_class = get_stability_class(
+            wind_speed=weather["wind_speed"],
+            datetime_obj=simulation_datetime,
+            latitude=SOURCE_LAT,
+            longitude=SOURCE_LON,
+            cloudiness_index=weather.get("cloud_cover", 0) * 10,
+            timezone_offset_hrs=TIMEZONE_OFFSET_HRS,
+        )
+        print(f"  Stability class    : {stability_class}")
+
+    """)
+
+    s_grid = _d("""\
+        # ============================================================================
+        # COMPUTATIONAL GRID
+        # ============================================================================
+        print("\\nSetting up computational grid ...")
+        X, Y, _, _ = setup_computational_grid(
+            x_max=X_MAX, y_max=Y_MAX, nx=NX, ny=NY,
+        )
+        print(f"  Grid: {NX}x{NY} cells, downwind {X_MAX} m, crosswind {Y_MAX} m")
+
+    """)
+
+    s_dispersion_header = _d("""\
+        # ============================================================================
+        # DISPERSION CALCULATION
+        # ============================================================================
+        print("\\nRunning Gaussian dispersion model ...")
+
+        RELEASE_DURATION_S = DURATION_MINUTES * 60.0
+        TOTAL_MASS_G       = MASS_RELEASED_KG * 1000.0
+
+    """)
+
+    s_zones = _d("""\
+        # ============================================================================
+        # ZONE EXTRACTION
+        # ============================================================================
+        print("\\nExtracting threat zones ...")
+        # Returns Dict[str, Optional[Polygon]]  (shapely Polygon or None per level)
+        threat_zones = extract_zones(
+            X, Y, concentration, AEGL_THRESHOLDS,
+            SOURCE_LAT, SOURCE_LON,
+            wind_dir=weather["wind_dir"],
+        )
+
+    """)
+
+    s_sim_conditions = _d("""\
+        # ============================================================================
+        # SIMULATION CONDITIONS SUMMARY
+        # ============================================================================
+        print()
+        print("=" * 60)
+        print("METEOROLOGICAL CONDITIONS")
+        print("=" * 60)
+        _temp_c = weather.get("temperature_K", 273.15) - 273.15
+        _meteo_rows = [
+            ("Wind Speed",      f"{weather.get('wind_speed', 0):.2f} m/s"),
+            ("Wind Direction",  f"{weather.get('wind_dir', 0):.0f} deg"),
+            ("Temperature",     f"{_temp_c:.1f} C"),
+            ("Humidity",        f"{weather.get('humidity', 0)*100:.0f} %"),
+            ("Cloud Cover",     f"{weather.get('cloud_cover', 0)*100:.0f} %"),
+            ("Stability Class", stability_class),
+            ("Weather Source",  weather.get("source", "unknown").title()),
+        ]
+        for label, val in _meteo_rows:
+            print(f"  {label:<22}: {val}")
+
+        print()
+        print("=" * 60)
+        print("RELEASE PARAMETERS")
+        print("=" * 60)
+        _src_mode_label = "Instantaneous/Puff" if SOURCE_TERM_MODE == "instantaneous" else "Continuous"
+        _release_rows = [
+            ("Chemical",          CHEMICAL_NAME),
+            ("Release Type",      RELEASE_TYPE.title()),
+            ("Source Term Mode",  _src_mode_label),
+            ("Release Rate",      f"{RELEASE_RATE} g/s"),
+            ("Source Height",     f"{TANK_HEIGHT} m"),
+            ("Duration",          f"{DURATION_MINUTES:.1f} min"),
+            ("Mass Released",     f"{MASS_RELEASED_KG:.1f} kg"),
+            ("Terrain Roughness", TERRAIN_ROUGHNESS),
+            ("Receptor Height",   f"{RECEPTOR_HEIGHT_M:.1f} m"),
+            ("Simulation Time",   str(simulation_datetime)),
+        ]
+        for label, val in _release_rows:
+            print(f"  {label:<22}: {val}")
+        print()
+
+    """)
+
+    s_zone_distances = _d("""\
+        # ============================================================================
+        # ZONE DISTANCES FROM SOURCE
+        # ============================================================================
+
+        def _haversine_km(lat1, lon1, lat2, lon2):
+            \"\"\"Great-circle distance in km.\"\"\"
+            lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+            dlon, dlat = lon2 - lon1, lat2 - lat1
+            a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+            return 2 * asin(sqrt(a)) * 6371.0
+
+        def _max_dist_from_source(polygon, src_lat, src_lon):
+            if polygon is None or polygon.is_empty:
+                return None
+            max_d = 0.0
+            try:
+                for lon, lat in polygon.exterior.coords:
+                    d = _haversine_km(src_lat, src_lon, lat, lon)
+                    if d > max_d:
+                        max_d = d
+            except Exception:
+                return None
+            return max_d if max_d > 0 else None
+
+        print("=" * 60)
+        print("AEGL THREAT ZONE DISTANCES FROM SOURCE")
+        print("=" * 60)
+        _ZONE_ORDER = ["AEGL-3", "AEGL-2", "AEGL-1"]
+        for _zone_name in _ZONE_ORDER:
+            _poly   = threat_zones.get(_zone_name)
+            _thresh = AEGL_THRESHOLDS.get(_zone_name, "N/A")
+            _thresh_str = f"{_thresh:.0f} ppm" if isinstance(_thresh, (int, float)) else str(_thresh)
+            _dist_km = _max_dist_from_source(_poly, SOURCE_LAT, SOURCE_LON) if _poly else None
+            if _dist_km is not None:
+                print(f"  {_zone_name:<8}  threshold: {_thresh_str:<12}  max distance: {_dist_km:.3f} km  ({_dist_km*1000:.0f} m)")
+            else:
+                print(f"  {_zone_name:<8}  threshold: {_thresh_str:<12}  max distance: -- (no zone formed)")
+        print()
+
+    """)
+
+    s_analytics = _d(f"""\
+        # ============================================================================
+        # ANALYTICS CHARTS  (saved as interactive HTML files)
+        # ============================================================================
+        print("\\nGenerating analytics charts ...")
+
+        _analytics_dir = Path(_root) / "outputs" / "threat_zones"
+        _analytics_dir.mkdir(parents=True, exist_ok=True)
+        _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        _analytics = [
+            ("centerline",  create_centerline_concentration_plot(X, Y, concentration, weather["wind_dir"])),
+            ("crosswind",   create_crosswind_concentration_plot(X, Y, concentration)),
+            ("contour",     create_concentration_contour_plot(X, Y, concentration, AEGL_THRESHOLDS, weather["wind_dir"])),
+            ("statistics",  create_concentration_statistics(concentration, AEGL_THRESHOLDS)),
+            ("distance",    create_distance_vs_concentration_plot(X, Y, concentration, AEGL_THRESHOLDS)),
+        ]
+
+        _analytics_paths = []
+        for _name, _fig in _analytics:
+            _path = _analytics_dir / f"{chem_slug}_analytics_{{_name}}_{{_ts}}.html"
+            _fig.write_html(str(_path))
+            _analytics_paths.append(_path)
+            print(f"  Saved: {{_path.name}}")
+
+        print()
+
+    """)
+
+    s_map = _d(f"""\
+        # ============================================================================
+        # INTERACTIVE THREAT ZONE MAP
+        # ============================================================================
+        print("Creating threat zone map ...")
+        lat_grid, lon_grid = meters_to_latlon(
+            X, Y, SOURCE_LAT, SOURCE_LON, weather["wind_dir"],
+        )
+        zoom_level, bounds = calculate_optimal_zoom_level(
+            lat_grid, lon_grid, concentration,
+            threshold=min(AEGL_THRESHOLDS.values()),
+        )
+
+        m = create_dispersion_map(
+            source_lat=SOURCE_LAT,
+            source_lon=SOURCE_LON,
+            x_grid=X,
+            y_grid=Y,
+            concentration=concentration,
+            thresholds=AEGL_THRESHOLDS,
+            wind_direction=weather["wind_dir"],
+            zoom_start=zoom_level,
+            chemical_name=CHEMICAL_NAME,
+            source_height=TANK_HEIGHT,
+            wind_speed=weather["wind_speed"],
+            stability_class=stability_class,
+            include_heatmap=True,
+            include_compass=True,
+        )
+
+        if resolved_sources:
+            m = add_facility_markers(m, resolved_sources) or m
+
+        if bounds[0] is not None:
+            try:
+                m.fit_bounds(
+                    [[bounds[1], bounds[3]], [bounds[0], bounds[2]]],
+                    padding=(0.1, 0.1), max_zoom=18,
+                )
+            except Exception:
+                pass
+
+        # ============================================================================
+        # SAVE ALL OUTPUTS & OPEN IN BROWSER
+        # ============================================================================
+        _map_path = _analytics_dir / f"{chem_slug}_threat_zones_{{_ts}}.html"
+        m.save(str(_map_path))
+        print(f"Map saved to: {{_map_path}}")
+
+        print("\\nOpening all outputs in web browser ...")
+        webbrowser.open(_map_path.as_uri())
+        for _p in _analytics_paths:
+            webbrowser.open(_p.as_uri())
+
+        print("\\nDone! All outputs have been opened in your browser.")
+        print(f"Files are in: {{_analytics_dir}}")
+    """)
+
+    script = (
+        s_docstring
+        + "\n" + s_imports
+        + "\n" + s_config
+        + s_sources
+        + s_chem_props
+        + s_datetime
+        + s_weather_header + "\n"
+        + weather_block + "\n\n"
+        + s_stability
+        + s_grid
+        + s_dispersion_header
+        + dispersion_block + "\n\n"
+        + s_zones
+        + s_sim_conditions
+        + s_zone_distances
+        + s_analytics
+        + s_map
+    )
+
+    return script
+
+
+# ---------------------------------------------------------------------------
+# Private helpers
+# ---------------------------------------------------------------------------
+
+def _slug(name: str) -> str:
+    """Convert a chemical name to a filesystem-safe slug."""
+    import re
+    s = name.lower()
+    s = re.sub(r"[^a-z0-9]+", "_", s).strip("_")
+    return s[:40]
+
+
+def _source_color(index: int) -> str:
+    colors = ["red", "blue", "green", "orange", "purple",
+              "brown", "pink", "gray", "olive", "cyan"]
+    return colors[index % len(colors)]
+
+
+def _single_source_block(source_term_mode: str, duration_minutes: float) -> str:
+    if source_term_mode == "instantaneous":
+        return textwrap.dedent("""\
+            source_q       = TOTAL_MASS_G           # instantaneous total mass (g)
+            dispersion_mode = "instantaneous"
+
+            concentration, U_local, stability_class, resolved_sources = calculate_gaussian_dispersion(
+                weather=weather, X=X, Y=Y,
+                source_lat=SOURCE_LAT, source_lon=SOURCE_LON,
+                molecular_weight=MOLECULAR_WEIGHT,
+                default_release_rate=source_q,
+                default_height=TANK_HEIGHT,
+                z_ref=3.0, z_measurement=RECEPTOR_HEIGHT_M,
+                t=RELEASE_DURATION_S, t_r=RELEASE_DURATION_S,
+                mode=dispersion_mode,
+                sources=[{
+                    "lat": SOURCE_LAT, "lon": SOURCE_LON,
+                    "name": "Release Source",
+                    "height": TANK_HEIGHT, "rate": source_q,
+                    "color": "red",
+                }],
+                latitude=SOURCE_LAT, longitude=SOURCE_LON,
+                timezone_offset_hrs=TIMEZONE_OFFSET_HRS,
+                roughness=TERRAIN_ROUGHNESS,
+                datetime_obj=simulation_datetime,
+            )
+            print(f"  U_local         : {U_local:.2f} m/s")
+            print(f"  Stability class : {stability_class}")
+        """)
+    else:
+        return textwrap.dedent("""\
+            source_q       = RELEASE_RATE           # continuous release rate (g/s)
+            dispersion_mode = "continuous"
+
+            concentration, U_local, stability_class, resolved_sources = calculate_gaussian_dispersion(
+                weather=weather, X=X, Y=Y,
+                source_lat=SOURCE_LAT, source_lon=SOURCE_LON,
+                molecular_weight=MOLECULAR_WEIGHT,
+                default_release_rate=source_q,
+                default_height=TANK_HEIGHT,
+                z_ref=3.0, z_measurement=RECEPTOR_HEIGHT_M,
+                t=RELEASE_DURATION_S, t_r=RELEASE_DURATION_S,
+                mode=dispersion_mode,
+                sources=[{
+                    "lat": SOURCE_LAT, "lon": SOURCE_LON,
+                    "name": "Release Source",
+                    "height": TANK_HEIGHT, "rate": source_q,
+                    "color": "red",
+                }],
+                latitude=SOURCE_LAT, longitude=SOURCE_LON,
+                timezone_offset_hrs=TIMEZONE_OFFSET_HRS,
+                roughness=TERRAIN_ROUGHNESS,
+                datetime_obj=simulation_datetime,
+            )
+            print(f"  U_local         : {U_local:.2f} m/s")
+            print(f"  Stability class : {stability_class}")
+        """)
+
+
+def _multi_source_block(
+    source_term_mode: str,
+    multi_sources: list[dict],
+    duration_minutes: float,
+) -> str:
+    return textwrap.dedent(f"""\
+        center_lat = sum(s["lat"] for s in RELEASE_SOURCES) / len(RELEASE_SOURCES)
+        center_lon = sum(s["lon"] for s in RELEASE_SOURCES) / len(RELEASE_SOURCES)
+
+        U_local = wind_profile(
+            z_user=RELEASE_SOURCES[0]["height"], z0=3.0,
+            U_user=weather["wind_speed"], stability_class=stability_class,
+        )
+        rate_sum = sum(max(float(s["rate"] or 0), 0.0) for s in RELEASE_SOURCES)
+        sources = []
+        for i, s in enumerate(RELEASE_SOURCES):
+            lat_diff = (s["lat"] - center_lat) * 111000
+            lon_diff = (s["lon"] - center_lon) * 111000 * np.cos(np.radians(center_lat))
+            if SOURCE_TERM_MODE == "instantaneous":
+                src_q = (TOTAL_MASS_G * max(float(s["rate"] or 0), 0.0) / rate_sum
+                         if rate_sum > 0 else TOTAL_MASS_G / len(RELEASE_SOURCES))
+            else:
+                src_q = s["rate"]
+            sources.append({{
+                "name"    : s["name"],
+                "Q"       : src_q,
+                "x0"      : lon_diff, "y0": lat_diff,
+                "h_s"     : s["height"],
+                "wind_dir": weather["wind_dir"],
+            }})
+
+        concentration = multi_source_concentration(
+            sources=sources, x_grid=X, y_grid=Y,
+            z=RECEPTOR_HEIGHT_M,
+            t=RELEASE_DURATION_S, t_r=RELEASE_DURATION_S,
+            U=U_local, stability_class=stability_class,
+            roughness=TERRAIN_ROUGHNESS,
+            mode=SOURCE_TERM_MODE,
+            grid_wind_direction=weather["wind_dir"],
+        )
+        # Convert g/m³ → ppm using ideal gas law
+        R = 0.08206
+        T = weather["temperature_K"]
+        Vm = R * T / 1.0
+        concentration = concentration * (Vm / MOLECULAR_WEIGHT) * 1000
+
+        resolved_sources = [{{
+            "lat"   : s["lat"], "lon": s["lon"],
+            "name"  : s["name"],
+            "height": s["height"], "rate": s["rate"],
+            "color" : s["color"],
+        }} for s in RELEASE_SOURCES]
+
+        # Use the centroid as the display origin for the map
+        SOURCE_LAT, SOURCE_LON = center_lat, center_lon
+        print(f"  U_local         : {{U_local:.2f}} m/s")
+        print(f"  Stability class : {{stability_class}}")
+    """)
+
+
+# ---------------------------------------------------------------------------
+# File persistence helper
+# ---------------------------------------------------------------------------
+
+def save_script_to_examples(script_text: str, chemical: str, project_root: str) -> str:
+    """Save *script_text* to ``<project_root>/examples/`` and return the path."""
+    examples_dir = os.path.join(project_root, "examples")
+    os.makedirs(examples_dir, exist_ok=True)
+
+    chem_slug = _slug(chemical)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{chem_slug}_threat_zones_{ts}.py"
+    filepath = os.path.join(examples_dir, filename)
+
+    with open(filepath, "w", encoding="utf-8") as fh:
+        fh.write(script_text)
+
+    return filepath

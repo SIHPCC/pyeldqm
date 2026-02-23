@@ -1,0 +1,122 @@
+"""Health Impact Assessment tab — content area only."""
+
+from dash import html, dcc
+import dash_bootstrap_components as dbc
+from ..styles import CARD_STYLE, CONTENT_STYLE
+
+
+def create_health_impact_content():
+    """Create Health Impact Assessment tab content."""
+    return dbc.Col([
+        dbc.Card([
+            dbc.CardBody([
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Button(
+                            [html.I(className="fas fa-heartbeat", style={'marginRight': '0.5rem'}),
+                             "Estimate Health Impact"],
+                            id="calc-health-btn-top",
+                            size="lg",
+                            className="w-100",
+                            style={
+                                'fontSize': '0.95rem', 'fontWeight': '600', 'padding': '0.75rem',
+                                'backgroundColor': '#8B4513', 'borderColor': '#6B3410', 'color': 'white',
+                            },
+                        ),
+                    ], width=5),
+                    dbc.Col([
+                        dbc.Button(
+                            [html.I(className="fas fa-undo", style={'marginRight': '0.4rem'}),
+                             "Reset"],
+                            id="reset-health-btn",
+                            color="secondary",
+                            size="lg",
+                            className="w-100",
+                            style={'fontSize': '0.95rem', 'fontWeight': '600', 'padding': '0.75rem'},
+                        ),
+                    ], width=5),
+                ], justify="center", className="g-3", style={'alignItems': 'center'}),
+                html.Div(id="health-status-top", className="mt-2"),
+            ], style={'padding': '0.75rem'}),
+        ], style={'marginBottom': '0.75rem', 'border': '2px solid #6c757d',
+                  'boxShadow': '0 2px 4px rgba(108,117,125,0.2)'}),
+
+        dbc.Card([
+            dbc.CardHeader(
+                html.Div([
+                    html.I(className="fas fa-map",
+                           style={'marginRight': '0.4rem', 'color': '#1f77b4', 'fontSize': '0.9rem'}),
+                    "Health Impact Map",
+                    dbc.Button(
+                        html.I(className="fas fa-chevron-up", style={'fontSize': '0.8rem'}),
+                        id="health-map-toggle", size="sm", color="secondary",
+                        className="float-end",
+                        style={'marginLeft': 'auto', 'padding': '0.25rem 0.5rem'},
+                    ),
+                ], style={'fontSize': '0.9rem', 'fontWeight': '700', 'display': 'flex',
+                          'alignItems': 'center', 'width': '100%', 'color': '#1f77b4',
+                          'letterSpacing': '0.5px'}),
+                style={'backgroundColor': 'transparent', 'borderBottom': '2px solid #1f77b4',
+                       'padding': '0.5rem 0.75rem'},
+            ),
+            dbc.Collapse(
+                dbc.CardBody([
+                    dcc.Loading(
+                        id="loading-health-map",
+                        type="default",
+                        children=html.Div(id="health-map-container", children=[
+                            html.Div([
+                                html.I(className="fas fa-info-circle fa-3x",
+                                       style={'color': '#6c757d', 'marginBottom': '1rem'}),
+                                html.H5("Configure parameters and click 'Estimate Health Impact' to start"),
+                            ], style={'textAlign': 'center', 'padding': '3rem', 'color': '#666'}),
+                        ]),
+                    ),
+                ], style={'padding': '0.5rem', 'backgroundColor': '#f8f9fa'}),
+                id="health-map-collapse",
+                is_open=True,
+            ),
+        ], style=CARD_STYLE),
+
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H6("Max Concentration", className="text-muted"),
+                        html.H4(id="health-max-concentration", children="---", style={'color': '#6c757d'}),
+                    ], style={'textAlign': 'center'}),
+                ], style={'background': '#e9ecef', 'border': '2px solid #6c757d'}),
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H6("Threshold Zones", className="text-muted"),
+                        html.H4(id="health-zones-count", children="---", style={'color': '#28a745'}),
+                    ], style={'textAlign': 'center'}),
+                ], style={'background': '#d4edda', 'border': '2px solid #28a745'}),
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H6("Stability Class", className="text-muted"),
+                        html.H4(id="health-stability-class", children="---", style={'color': '#17a2b8'}),
+                    ], style={'textAlign': 'center'}),
+                ], style={'background': '#d1ecf1', 'border': '2px solid #17a2b8'}),
+            ], width=3),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H6("Threshold Set", className="text-muted"),
+                        html.H4(id="health-threshold-set", children="---", style={'color': '#ff7043'}),
+                    ], style={'textAlign': 'center'}),
+                ], style={'background': '#ffccbc', 'border': '2px solid #ff7043'}),
+            ], width=3),
+        ], className="mt-3"),
+
+        dbc.Card([
+            dbc.CardHeader("Threshold Details", style={'fontWeight': '600'}),
+            dbc.CardBody([html.Div(id="health-threshold-table", children="---")]),
+        ], style={**CARD_STYLE, 'marginTop': '0.75rem'}),
+
+        html.Div(id="health-details", className="mt-3"),
+    ], width=9, style=CONTENT_STYLE)

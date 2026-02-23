@@ -1,0 +1,18 @@
+scenario_type: gaussian
+meteorology:
+  wind_speed: 5.0
+  z_ref: 3.0
+  z0: 0.03
+  stability_class: D
+source:
+  release_rate_g_s: 1000
+  duration_s: 600
+  height_m: 3
+chemical:
+  MW_g_mol: 17.03
+  ppm_levels:
+    AEGL-1: 30
+    AEGL-2: 160
+    AEGL-3: 1100
+geometry:
+  roughness: RURAL
