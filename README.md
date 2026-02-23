@@ -157,31 +157,47 @@ Pre-built scenarios live in `configs/`:
 ```
 pyELDQM/
 ├── app/                         # Dash web-application layer
-│   ├── assets/                  # CSS/assets
+│   ├── assets/                  # CSS and static assets
 │   ├── callbacks/               # Dash callback modules
 │   ├── components/              # Reusable UI components
+│   │   └── tabs/                # Per-tab component modules
 │   ├── layout/                  # Page layout (tabs, sidebar, header)
 │   └── utils/                   # App utilities
+│       └── script_generator/    # Auto-generated Python script templates
 ├── cache/                       # Runtime cache files
-├── configs/                     # Example YAML scenarios
+├── configs/                     # Example YAML scenario files
 ├── core/                        # Pure-Python scientific library
-│   ├── dispersion_models/       # Gaussian + dense-gas models
-│   ├── evacuation/              # Route optimisation (osmnx)
-│   ├── fire_models/             # Pool fire, jet fire, flash fire
-│   ├── geography/               # Geographic helpers
-│   ├── meteorology/             # Stability, wind profile, solar radiation
-│   ├── population/              # Population raster I/O
-│   ├── protective_actions/      # Protective action models
-│   ├── source_models/           # Pipeline, tank, puddle source terms
-│   ├── utils/                   # Shared utilities
-│   └── visualization/           # Folium map builders
-├── data/                        # Reference data (not in wheel)
+│   ├── dispersion_models/       # Gaussian plume/puff + dense-gas (Britter-McQuaid)
+│   ├── evacuation/              # Route optimisation (osmnx / networkx)
+│   ├── fire_models/             # Pool fire, jet fire, flash fire, BLEVE
+│   ├── geography/               # Geographic helpers and coordinate utilities
+│   ├── meteorology/             # Stability, wind profile, solar radiation, real-time weather
+│   ├── population/              # Population raster I/O, GHSL/WorldPop download helpers
+│   ├── protective_actions/      # Shelter-in-place analysis models
+│   ├── source_models/           # Pipeline, tank (gas/liquid/two-phase), puddle source terms
+│   │   ├── gas_pipeline/
+│   │   ├── tank_release/
+│   │   └── puddle_evaporation/
+│   ├── utils/                   # Shared utilities (grid setup, zone extraction, sensor optimisation)
+│   └── visualization/           # Folium map builders and zone layer rendering
+├── data/                        # Reference data (not bundled in wheel)
+│   ├── chemicals_database/      # SQLite chemical properties database
+│   ├── geographic_data/         # Facility GeoJSON files
+│   ├── population/              # Population raster data (WorldPop / GHSL GeoTIFF)
+│   ├── thermodynamics_data/     # Phase equilibrium CSV data
+│   └── weather_samples/         # Sample weather CSV files
 ├── docs/                        # Documentation assets
 │   └── images/                  # Gallery screenshots
-├── examples/                    # Standalone usage scripts
-├── outputs/                     # Generated outputs
+├── examples/                    # Standalone tutorials and scripts
+│   ├── notebooks/               # Jupyter tutorial notebooks (01–06)
+│   └── scripts/                 # Standalone Python example scripts (01–12)
+├── outputs/                     # Generated outputs (maps, reports)
+│   ├── realtime_threat_zones/
+│   ├── reports/
+│   └── threat_zones/
 ├── tests/                       # pytest test suite
-├── validation/                  # Validation notebooks/scripts
+├── validation/                  # Model validation scripts and metrics
+│   └── validation_scripts/
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
