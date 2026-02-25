@@ -214,7 +214,7 @@ pyELDQM/
 
 | Screenshot | Description |
 |---|---|
-| ![Threat Zones](docs/images/threat_zones.png) | Chemical Threat Zones map |
+| ![Threat Zones](docs/images/threat_zones.png) | Chemical Threat Zones|
 | ![PAR Analysis](docs/images/par_analysis.png) | Population At Risk analysis |
 | ![Emergency Routes](docs/images/emergency_routes.png) | Emergency route optimization |
 | ![Sensor Placement](docs/images/sensor_placement.png) | Sensor network optimization |

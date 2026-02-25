@@ -190,7 +190,7 @@ def extract_zones(
     ...     if poly and not poly.is_empty:
     ...         print(f"{name}: {poly.bounds}")
     """
-    from core.visualization.folium_maps import meters_to_latlon
+    from ..visualization.folium_maps import meters_to_latlon
     
     zones: Dict[str, Optional[Polygon]] = {}
     

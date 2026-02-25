@@ -105,6 +105,7 @@ def generate_health_impact_script(
     def _d(s: str) -> str:
         return textwrap.dedent(s).lstrip("\n")
 
+    # ── Docstring ───────────────────────────────────────────────────────────
     s_doc = _d(f"""\
         \"\"\"
         Health Impact Analysis — Auto-Generated Example
@@ -123,6 +124,7 @@ def generate_health_impact_script(
         \"\"\"
     """)
 
+    # ── Imports ─────────────────────────────────────────────────────────────
     s_imports = _d(f"""\
         from pathlib import Path
         from datetime import datetime
@@ -148,6 +150,7 @@ def generate_health_impact_script(
         )
     """)
 
+    # ── Configuration constants (no multi-line vars embedded) ───────────────
     s_cfg = _d(f"""\
         CHEMICAL_NAME       = {chemical!r}
         MOLECULAR_WEIGHT    = {molecular_weight}
@@ -174,12 +177,13 @@ def generate_health_impact_script(
         AEGL_THRESHOLDS = {aegl_thresholds}
         X_MAX = {x_max}
         Y_MAX = {y_max}
+        NX    = 500
+        NY    = 500
         SELECTED_SETS = {selected_sets_repr}
-
-        {multi_source_cfg}
     """)
 
-    s_main = _d(f"""\
+    # ── Main body part 1: threshold colour map + start → datetime ───────────
+    s_main_1 = _d(f"""\
         _THRESHOLD_COLORS = {{
             "AEGL-1": "#FFFF66", "AEGL-2": "#FFB84D", "AEGL-3": "#FF6666",
             "ERPG-1": "#ADD8E6", "ERPG-2": "#5599FF", "ERPG-3": "#CC77CC",
@@ -190,34 +194,37 @@ def generate_health_impact_script(
         print("Running Health Impact analysis...")
         {dt_block}
         print(f"Simulation datetime: {{simulation_datetime.isoformat()}}")
+    """)
 
-        {weather_block}
-
+    # ── Main body part 2: stability → grid → release constants ──────────────
+    s_main_2 = _d("""\
         stability_class = get_stability_class(
             wind_speed=weather["wind_speed"],
-            cloud_cover=weather["cloud_cover"],
-            daytime=6 <= simulation_datetime.hour <= 18,
-            urban=(TERRAIN_ROUGHNESS.upper() == "URBAN"),
+            datetime_obj=simulation_datetime,
+            latitude=SOURCE_LAT,
+            longitude=SOURCE_LON,
+            cloudiness_index=weather.get("cloud_cover", 0) * 10,
+            timezone_offset_hrs=TIMEZONE_OFFSET_HRS,
         )
+        print(f"  Stability class : {stability_class}")
 
         u_ref = wind_profile(
-            weather["wind_speed"],
-            z=TANK_HEIGHT,
-            z_ref=10,
-            p=0.33 if TERRAIN_ROUGHNESS.upper() == "URBAN" else 0.15,
+            z_user=TANK_HEIGHT,
+            z0=3.0,
+            U_user=weather["wind_speed"],
+            stability_class=stability_class,
         )
 
         X, Y, _, _ = setup_computational_grid(
-            x_max=X_MAX, y_max=Y_MAX, source_height=TANK_HEIGHT,
-            source_lat=SOURCE_LAT, source_lon=SOURCE_LON,
-            wind_direction=weather["wind_dir"],
+            x_max=X_MAX, y_max=Y_MAX, nx=NX, ny=NY,
         )
 
         RELEASE_DURATION_S = DURATION_MINUTES * 60.0
         TOTAL_MASS_G = MASS_RELEASED_KG * 1000.0
+    """)
 
-        {dispersion_block}
-
+    # ── Main body part 3: threshold lookup → zones → map → output ───────────
+    s_main_3 = _d(f"""\
         all_thresholds = {{}}
         if "aegl" in SELECTED_SETS:
             try:
@@ -291,4 +298,16 @@ def generate_health_impact_script(
         webbrowser.open(_map_path.as_uri())
     """)
 
-    return s_doc + "\n" + s_imports + "\n" + s_cfg + "\n" + s_main
+    # Assemble: multi-line vars concatenated directly, never embedded inside
+    # a _d() f-string — same pattern as threat_zones.py.
+    return (
+        s_doc
+        + "\n" + s_imports
+        + "\n" + s_cfg
+        + "\n" + multi_source_cfg + "\n"
+        + "\n" + s_main_1
+        + "\n" + weather_block
+        + "\n" + s_main_2
+        + "\n" + dispersion_block
+        + "\n" + s_main_3
+    )

@@ -119,6 +119,7 @@ def generate_route_script(
     def _d(s: str) -> str:
         return textwrap.dedent(s).lstrip("\n")
 
+    # ── Docstring ───────────────────────────────────────────────────────────
     s_doc = _d(f"""\
         \"\"\"
         Emergency Routes Optimization — Auto-Generated Example
@@ -138,6 +139,7 @@ def generate_route_script(
         \"\"\"
     """)
 
+    # ── Imports ─────────────────────────────────────────────────────────────
     s_imports = _d(f"""\
         from pathlib import Path
         from datetime import datetime
@@ -166,6 +168,7 @@ def generate_route_script(
         )
     """)
 
+    # ── Configuration constants (no multi-line vars embedded) ───────────────
     s_cfg = _d(f"""\
         CHEMICAL_NAME       = {chemical!r}
         MOLECULAR_WEIGHT    = {molecular_weight}
@@ -192,17 +195,16 @@ def generate_route_script(
         AEGL_THRESHOLDS = {aegl_thresholds}
         X_MAX = {x_max}
         Y_MAX = {y_max}
+        NX    = 500
+        NY    = 500
 
         ROUTE_RADIUS_M = {route_radius_m}
         ROUTE_BUFFER_M = {route_proximity_buffer_m}
         SHOW_UNSAFE_ROADS = {show_unsafe_roads}
-
-        {multi_source_cfg}
-
-        {shelters_cfg}
     """)
 
-    s_main = _d(f"""\
+    # ── Main simulation body — part 1: setup up to weather ──────────────────
+    s_main_1 = _d(f"""\
         def _path_length_m(G, path_nodes):
             if not path_nodes or len(path_nodes) < 2:
                 return 0.0
@@ -219,34 +221,37 @@ def generate_route_script(
         print("Running Emergency Routes simulation...")
         {dt_block}
         print(f"Simulation datetime: {{simulation_datetime.isoformat()}}")
+    """)
 
-        {weather_block}
-
+    # ── Main simulation body — part 2: stability → grid → release params ────
+    s_main_2 = _d("""\
         stability_class = get_stability_class(
             wind_speed=weather["wind_speed"],
-            cloud_cover=weather["cloud_cover"],
-            daytime=6 <= simulation_datetime.hour <= 18,
-            urban=(TERRAIN_ROUGHNESS.upper() == "URBAN"),
+            datetime_obj=simulation_datetime,
+            latitude=SOURCE_LAT,
+            longitude=SOURCE_LON,
+            cloudiness_index=weather.get("cloud_cover", 0) * 10,
+            timezone_offset_hrs=TIMEZONE_OFFSET_HRS,
         )
+        print(f"  Stability class : {stability_class}")
 
         u_ref = wind_profile(
-            weather["wind_speed"],
-            z=TANK_HEIGHT,
-            z_ref=10,
-            p=0.33 if TERRAIN_ROUGHNESS.upper() == "URBAN" else 0.15,
+            z_user=TANK_HEIGHT,
+            z0=3.0,
+            U_user=weather["wind_speed"],
+            stability_class=stability_class,
         )
 
         X, Y, _, _ = setup_computational_grid(
-            x_max=X_MAX, y_max=Y_MAX, source_height=TANK_HEIGHT,
-            source_lat=SOURCE_LAT, source_lon=SOURCE_LON,
-            wind_direction=weather["wind_dir"],
+            x_max=X_MAX, y_max=Y_MAX, nx=NX, ny=NY,
         )
 
         RELEASE_DURATION_S = DURATION_MINUTES * 60.0
         TOTAL_MASS_G = MASS_RELEASED_KG * 1000.0
+    """)
 
-        {dispersion_block}
-
+    # ── Main simulation body — part 3: zones → map → routes → output ────────
+    s_main_3 = _d(f"""\
         threat_zones = extract_zones(
             X, Y, concentration, AEGL_THRESHOLDS,
             SOURCE_LAT, SOURCE_LON, wind_dir=weather["wind_dir"],
@@ -322,4 +327,17 @@ def generate_route_script(
         webbrowser.open(_map_path.as_uri())
     """)
 
-    return s_doc + "\n" + s_imports + "\n" + s_cfg + "\n" + s_main
+    # Assemble: multi-line vars are concatenated directly, never embedded
+    # inside a _d() f-string, matching the pattern used by threat_zones.py.
+    return (
+        s_doc
+        + "\n" + s_imports
+        + "\n" + s_cfg
+        + "\n" + multi_source_cfg + "\n"
+        + "\n" + shelters_cfg + "\n"
+        + "\n" + s_main_1
+        + "\n" + weather_block
+        + "\n" + s_main_2
+        + "\n" + dispersion_block
+        + "\n" + s_main_3
+    )
