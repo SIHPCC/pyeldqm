@@ -29,38 +29,38 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
 ]
 dependencies = [
+    # Core scientific computing
     "numpy>=1.20",
     "scipy>=1.7",
     "matplotlib>=3.3",
+    "scikit-image>=0.19",
     "scikit-learn>=1.0",
+    # Configuration and data handling
     "PyYAML>=5.4",
     "pandas>=1.3",
-    "requests>=2.25",
+    # Time zone support
     "pytz>=2021.1",
     "timezonefinder>=5.2",
+    # Weather data
+    "requests>=2.25",
+    "pyowm>=3.0",
+    # Geographic / routing
     "geopy>=2.2",
     "pyproj>=3.0",
     "networkx>=2.6",
+    "osmnx>=1.3",
+    "geopandas>=0.9",
+    "rasterio>=1.2",
+    "elevation>=1.0",
+    # Mapping and visualisation
     "folium>=0.14",
     "branca>=0.6",
     "shapely>=1.7",
     "plotly>=5.17",
+    # Dash application
     "dash>=2.14",
     "dash-bootstrap-components>=1.5",
 ]
-
-[project.optional-dependencies]
-# Heavy GIS dependencies (GDAL-based) — install separately if needed
-geo = [
-    "rasterio>=1.2",
-    "osmnx>=1.3",
-    "geopandas>=0.9",
-    "scikit-image>=0.19",
-    "elevation>=1.0",
-    "pyowm>=3.0",
-]
-# Everything including GIS extras
-full = ["pyeldqm[geo]"]
 
 # =============================================================================
 # Entry points  — single Dash web-app entry point only
@@ -76,15 +76,16 @@ Issues   = "https://github.com/SIHPCC/pyeldqm/issues"
 # Package discovery
 # =============================================================================
 [tool.setuptools.packages.find]
-include  = ["core*", "app*"]
+include  = ["core*", "app*", "data*"]
 exclude  = ["tests*", "examples*", "validation*"]
 
 [tool.setuptools]
 py-modules = ["run_app", "main"]
 
 [tool.setuptools.package-data]
-"app" = ["assets/*.css"]
-"*"   = ["configs/*.yaml"]
+"app"                      = ["assets/*.css"]
+"*"                        = ["configs/*.yaml"]
+"data.chemicals_database"  = ["*.sqlite3"]
 
 # =============================================================================
 # pytest

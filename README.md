@@ -63,13 +63,16 @@ pip install pyeldqm
 conda create -n pyeldqm python=3.10
 conda activate pyeldqm
 
-# 2. Install pyELDQM with pip inside the conda environment
+# 2a. Install published release from PyPI
 pip install pyeldqm
+
+# 2b. OR install from local source (development / editable)
+pip install -e .
 ```
 
-> **Geospatial extras** (osmnx, geopandas, rasterio) require GDAL and are optional.
-> Install them with `pip install "pyeldqm[geo]"` if you need evacuation routing or
-> population raster support.
+> **Important:** Always use `pip install -e .` (note the `-e` flag) when
+> installing from a cloned source tree. Omitting `-e` will cause a
+> *"unable to open database file"* error and missing-module errors.
 
 ### Development install
 

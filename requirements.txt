@@ -9,11 +9,11 @@ scikit-learn>=1.0.0
 PyYAML>=5.4.0
 pandas>=1.3.0
 
-# Optional: Weather data APIs
+# Weather data APIs
 requests>=2.25.0
 pyowm>=3.0.0
 
-# Optional: Time zone support
+# Time zone support
 pytz>=2021.1
 timezonefinder>=5.2.0
 

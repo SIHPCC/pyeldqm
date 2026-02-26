@@ -6,10 +6,52 @@ This module provides easy access to chemical properties from the SQLite database
 
 import sqlite3
 import os
+import sys
 import logging
 from typing import Optional, Dict, List, Any
 
 logger = logging.getLogger(__name__)
+
+
+def _find_chemicals_db() -> str:
+    """
+    Locate chemicals_database.sqlite3 in order of preference:
+    1. Source-tree path relative to this file  (editable installs, dev runs)
+    2. importlib.resources inside the installed ``data.chemicals_database`` package
+       (non-editable / wheel installs)
+    3. Raise a clear FileNotFoundError with troubleshooting guidance.
+    """
+    # --- 1. Source-tree / editable install ---
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    source_path = os.path.join(
+        base_dir, "data", "chemicals_database", "chemicals_database.sqlite3"
+    )
+    if os.path.exists(source_path):
+        return source_path
+
+    # --- 2. importlib.resources (wheel / non-editable install) ---
+    try:
+        import importlib.resources as pkg_resources  # Python ≥ 3.9
+
+        ref = pkg_resources.files("data.chemicals_database").joinpath(
+            "chemicals_database.sqlite3"
+        )
+        resolved = str(ref)
+        if os.path.exists(resolved):
+            return resolved
+    except Exception:
+        pass
+
+    # --- 3. Friendly error ---
+    raise FileNotFoundError(
+        f"Cannot locate chemicals_database.sqlite3.\n"
+        f"  Searched: {source_path}\n"
+        f"  To fix this, reinstall the package in editable mode from the source tree:\n"
+        f"      pip install -e \".[full]\"\n"
+        f"  or, for conda users:\n"
+        f"      conda activate pyeldqm\n"
+        f"      pip install -e \".[full]\""
+    )
 
 
 class ChemicalDatabase:
@@ -23,9 +65,7 @@ class ChemicalDatabase:
             db_path: Path to the SQLite database. If None, uses default path.
         """
         if db_path is None:
-            # Default path relative to this file
-            base_dir = os.path.dirname(os.path.dirname(__file__))
-            db_path = os.path.join(base_dir, 'data', 'chemicals_database', 'chemicals_database.sqlite3')
+            db_path = _find_chemicals_db()
         
         self.db_path = db_path
         self._conn = None
