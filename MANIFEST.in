@@ -1,8 +1,8 @@
 # Include YAML scenario configurations
 recursive-include configs *.yaml
 
-# Include Dash CSS assets
-recursive-include app/assets *.css
+# Include Dash CSS assets and images
+recursive-include app/assets *.css *.png *.jpg *.jpeg *.svg *.ico
 
 # Include chemicals database (required at runtime)
 include data/chemicals_database/chemicals_database.sqlite3

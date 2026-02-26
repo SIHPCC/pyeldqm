@@ -83,7 +83,7 @@ exclude  = ["tests*", "examples*", "validation*"]
 py-modules = ["run_app", "main"]
 
 [tool.setuptools.package-data]
-"app"                      = ["assets/*.css"]
+"app"                      = ["assets/*.css", "assets/*.png", "assets/*.jpg", "assets/*.svg", "assets/*.ico"]
 "*"                        = ["configs/*.yaml"]
 "data.chemicals_database"  = ["*.sqlite3"]
 
