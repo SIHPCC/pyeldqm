@@ -2,6 +2,7 @@
 <p align="center"><img src="docs/images/pyELDQM_logo_v0.1.png" alt="pyELDQM logo" width="100%" style="max-width: 1200px; height: auto;" /></p>
 
 [![CI](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml/badge.svg)](https://github.com/SIHPCC/pyeldqm/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/pyeldqm.svg)](https://pypi.org/project/pyeldqm/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
