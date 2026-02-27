@@ -2,7 +2,7 @@
 Tests for core.health_thresholds
 """
 import pytest
-from core.health_thresholds import (
+from pyeldqm.core.health_thresholds import (
     get_aegl_thresholds,
     get_erpg_thresholds,
     get_idlh_threshold,

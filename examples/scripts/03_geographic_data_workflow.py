@@ -16,8 +16,8 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Import geographic helper from core.geography
-from core.geography import ( 
+# Import geographic helper from pyeldqm.core.geography
+from pyeldqm.core.geography import ( 
     load_local_geographic_data,
     save_geographic_data,
     geocode_address,

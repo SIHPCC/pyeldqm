@@ -1,4 +1,4 @@
-from core.fire_models.pool_fire import pool_fire_flux
+from pyeldqm.core.fire_models.pool_fire import pool_fire_flux
 
 def test_pool_fire_flux_decay():
     q1 = pool_fire_flux(50.0, 10.0)

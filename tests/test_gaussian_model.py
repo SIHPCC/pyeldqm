@@ -1,6 +1,6 @@
 import numpy as np
-from core.dispersion_models.gaussian_model import single_source_concentration
-from core.dispersion_models.dispersion_utils import get_sigmas
+from pyeldqm.core.dispersion_models.gaussian_model import single_source_concentration
+from pyeldqm.core.dispersion_models.dispersion_utils import get_sigmas
 
 def test_gaussian_concentration_positive():
     x, y, z = 100.0, 0.0, 1.5

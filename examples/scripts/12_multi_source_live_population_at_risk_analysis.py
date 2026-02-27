@@ -38,16 +38,16 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # pyELDQM imports
-from core.dispersion_models.gaussian_model import multi_source_concentration
-from core.meteorology.realtime_weather import get_weather
-from core.meteorology.stability import get_stability_class
-from core.meteorology.wind_profile import wind_speed as calc_wind_profile
-from core.geography import get_complete_geographic_info
-from core.visualization.folium_maps import create_live_threat_map, add_facility_markers, meters_to_latlon
-from core.visualization import add_threat_zones_and_par_panel, ensure_layer_control
-from core.utils.features import setup_computational_grid
-from core.utils.zone_extraction import extract_zones
-from core.utils import LiveLoopManager
+from pyeldqm.core.dispersion_models.gaussian_model import multi_source_concentration
+from pyeldqm.core.meteorology.realtime_weather import get_weather
+from pyeldqm.core.meteorology.stability import get_stability_class
+from pyeldqm.core.meteorology.wind_profile import wind_speed as calc_wind_profile
+from pyeldqm.core.geography import get_complete_geographic_info
+from pyeldqm.core.visualization.folium_maps import create_live_threat_map, add_facility_markers, meters_to_latlon
+from pyeldqm.core.visualization import add_threat_zones_and_par_panel, ensure_layer_control
+from pyeldqm.core.utils.features import setup_computational_grid
+from pyeldqm.core.utils.zone_extraction import extract_zones
+from pyeldqm.core.utils import LiveLoopManager
 
 
 # ============================================================================

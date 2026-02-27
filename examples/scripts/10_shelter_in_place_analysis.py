@@ -27,18 +27,18 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # pyELDQM imports
-from core.utils import LiveLoopManager
-from core.utils.features import setup_computational_grid
-from core.utils.zone_extraction import extract_zones
-from core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
-from core.meteorology.realtime_weather import get_weather
-from core.protective_actions import (
+from pyeldqm.core.utils import LiveLoopManager
+from pyeldqm.core.utils.features import setup_computational_grid
+from pyeldqm.core.utils.zone_extraction import extract_zones
+from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
+from pyeldqm.core.meteorology.realtime_weather import get_weather
+from pyeldqm.core.protective_actions import (
     shelter_protection_factor,
     compare_protective_actions,
     recommend_protective_action,
     analyze_shelter_zones
 )
-from core.visualization import add_shelter_in_place_panel, ensure_layer_control, fit_map_to_polygons
+from pyeldqm.core.visualization import add_shelter_in_place_panel, ensure_layer_control, fit_map_to_polygons
 
 
 class Config:
@@ -78,7 +78,7 @@ class Config:
     UPDATE_INTERVAL_SECONDS = 20
 
 
-# extract_zones() is now imported from core.utils.zone_extraction
+# extract_zones() is now imported from pyeldqm.core.utils.zone_extraction
 
 
 def render_protective_action_zones(

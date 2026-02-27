@@ -107,43 +107,57 @@ Environment variables (all optional):
 ### Python API
 
 ```python
-import pyeldqm as eldqm
+from pyeldqm.core.chemical_database import ChemicalDatabase
 
-from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
-
-config = {
-    "source": {"lat": 14.60, "lon": 121.03, "Q_gs": 1.5},
-    "chemical": {"name": "chlorine", "MW": 70.91},
-    "meteorology": {"wind_speed_ms": 3.0, "wind_direction_deg": 270,
-                    "stability_class": "D", "roughness": "RURAL"},
-    "grid": {"x_max_m": 3000, "y_max_m": 1500, "nx": 200, "ny": 100},
-}
-result = calculate_gaussian_dispersion(config)
+with ChemicalDatabase() as db:
+    ammonia = db.get_chemical_by_name("AMMONIA")
+    print(ammonia["cas_number"], ammonia["molecular_weight"])
 ```
 
 ```python
-import pyeldqm as eldqm
+from pyeldqm.core.meteorology.realtime_weather import get_weather
 
-from pyeldqm.core.source_models.gas_pipeline.pipeline_leak import simulate_pipeline_leak
-
-result = simulate_pipeline_leak(duration_s=600, dt=60)
-print(result["Qt"])   # mass-flow rate time-series [kg/s]
+# Real-time weather (Open-Meteo)
+weather = get_weather(source="open_meteo", latitude=24.9, longitude=67.1)
+print(weather["wind_speed"], weather["wind_dir"], weather["temperature_K"])
 ```
 
 ```python
-import pyeldqm as eldqm
+import numpy as np
+from pyeldqm.core.dispersion_models.gaussian_model import multi_source_concentration
 
-from pyeldqm.core.health_thresholds import get_all_thresholds
+# 2D local grid (meters)
+x_vals = np.linspace(10, 2000, 200)
+y_vals = np.linspace(-800, 800, 160)
+X, Y = np.meshgrid(x_vals, y_vals)
 
-thresholds = get_all_thresholds("ammonia")
-print(thresholds["AEGL"])   # {'AEGL-1': 30.0, 'AEGL-2': 160.0, 'AEGL-3': 1100.0}
+# Multiple continuous release sources (g/s)
+sources = [
+    {"name": "A", "Q": 800, "x0": 0, "y0": 0, "h_s": 3.0, "wind_dir": 45.0},
+    {"name": "B", "Q": 600, "x0": 250, "y0": -120, "h_s": 2.5, "wind_dir": 45.0},
+]
+
+C_total = multi_source_concentration(
+    sources=sources,
+    x_grid=X,
+    y_grid=Y,
+    z=1.5,
+    t=600,
+    t_r=600,
+    U=5.0,
+    stability_class="D",
+    roughness="URBAN",
+    mode="continuous",
+    grid_wind_direction=45.0,
+)
+print(float(np.max(C_total)))
 ```
 
 ---
 
 ## Scenario configuration (YAML)
 
-Pre-built scenarios live in `configs/`:
+Pre-built scenarios live in `pyeldqm/configs/`:
 
 | File | Scenario |
 |---|---|
@@ -159,56 +173,56 @@ Pre-built scenarios live in `configs/`:
 
 ```
 pyELDQM/
-├── app/                         # Dash web-application layer
-│   ├── assets/                  # CSS and static assets
-│   ├── callbacks/               # Dash callback modules
-│   ├── components/              # Reusable UI components
-│   │   └── tabs/                # Per-tab component modules
-│   ├── layout/                  # Page layout (tabs, sidebar, header)
-│   └── utils/                   # App utilities
-│       └── script_generator/    # Auto-generated Python script templates
-├── cache/                       # Runtime cache files
-├── configs/                     # Example YAML scenario files
-├── core/                        # Pure-Python scientific library
-│   ├── dispersion_models/       # Gaussian plume/puff + dense-gas (Britter-McQuaid)
-│   ├── evacuation/              # Route optimisation (osmnx / networkx)
-│   ├── fire_models/             # Pool fire, jet fire, flash fire, BLEVE
-│   ├── geography/               # Geographic helpers and coordinate utilities
-│   ├── meteorology/             # Stability, wind profile, solar radiation, real-time weather
-│   ├── population/              # Population raster I/O, GHSL/WorldPop download helpers
-│   ├── protective_actions/      # Shelter-in-place analysis models
-│   ├── source_models/           # Pipeline, tank (gas/liquid/two-phase), puddle source terms
-│   │   ├── gas_pipeline/
-│   │   ├── tank_release/
-│   │   └── puddle_evaporation/
-│   ├── utils/                   # Shared utilities (grid setup, zone extraction, sensor optimisation)
-│   └── visualization/           # Folium map builders and zone layer rendering
-├── data/                        # Reference data (not bundled in wheel)
-│   ├── chemicals_database/      # SQLite chemical properties database
-│   ├── geographic_data/         # Facility GeoJSON files
-│   ├── population/              # Population raster data (WorldPop / GHSL GeoTIFF)
-│   ├── thermodynamics_data/     # Phase equilibrium CSV data
-│   └── weather_samples/         # Sample weather CSV files
-├── docs/                        # Documentation assets
-│   └── images/                  # Gallery screenshots
-├── examples/                    # Standalone tutorials and scripts
-│   ├── notebooks/               # Jupyter tutorial notebooks (01–06)
-│   └── scripts/                 # Standalone Python example scripts (01–12)
-├── outputs/                     # Generated outputs (maps, reports)
-│   ├── realtime_threat_zones/
-│   ├── reports/
-│   └── threat_zones/
-├── tests/                       # pytest test suite
-├── validation/                  # Model validation scripts and metrics
-│   └── validation_scripts/
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── LICENSE
-├── MANIFEST.in
-├── README.md
-├── pyproject.toml               # Packaging & tool configuration
-├── requirements.txt
-└── run_app.py
+|-- pyeldqm/                       # Python package root
+|   |-- app/                       # Dash web application
+|   |   |-- assets/
+|   |   |-- callbacks/
+|   |   |-- components/
+|   |   |   `-- tabs/
+|   |   |-- layout/
+|   |   `-- utils/
+|   |       `-- script_generator/
+|   |-- core/                      # Scientific and modelling engine
+|   |   |-- dispersion_models/
+|   |   |-- evacuation/
+|   |   |-- fire_models/
+|   |   |-- geography/
+|   |   |-- meteorology/
+|   |   |-- population/
+|   |   |-- protective_actions/
+|   |   |-- source_models/
+|   |   |   |-- gas_pipeline/
+|   |   |   |-- puddle_evaporation/
+|   |   |   `-- tank_release/
+|   |   |-- utils/
+|   |   `-- visualization/
+|   |-- data/                      # Runtime/reference data
+|   |   |-- chemicals_database/
+|   |   |-- geographic_data/
+|   |   |-- population/
+|   |   |-- thermodynamics_data/
+|   |   `-- weather_samples/
+|   |-- configs/                   # Scenario YAML files
+|   `-- validation/
+|       `-- validation_scripts/
+|-- examples/
+|   |-- notebooks/
+|   `-- scripts/
+|-- docs/
+|   `-- images/
+|-- tests/
+|-- cache/
+|-- outputs/
+|-- .github/
+|   `-- workflows/
+|-- run_app.py
+|-- pyproject.toml
+|-- MANIFEST.in
+|-- requirements.txt
+|-- CHANGELOG.md
+|-- CONTRIBUTING.md
+|-- README.md
+`-- LICENSE
 ```
 
 ---
@@ -247,3 +261,4 @@ pull-request workflow.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+

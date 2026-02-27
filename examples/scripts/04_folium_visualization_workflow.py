@@ -23,15 +23,15 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Import pyELDQM modules
-from core.dispersion_models.gaussian_model import single_source_concentration
-from core.dispersion_models.dispersion_utils import get_sigmas
-from core.meteorology.stability import get_stability_class
-from core.meteorology.wind_profile import wind_speed as calc_wind_profile
-from core.geography import get_complete_geographic_info
+from pyeldqm.core.dispersion_models.gaussian_model import single_source_concentration
+from pyeldqm.core.dispersion_models.dispersion_utils import get_sigmas
+from pyeldqm.core.meteorology.stability import get_stability_class
+from pyeldqm.core.meteorology.wind_profile import wind_speed as calc_wind_profile
+from pyeldqm.core.geography import get_complete_geographic_info
 
 # Import Folium visualization
 try:
-    from core.visualization.folium_maps import (
+    from pyeldqm.core.visualization.folium_maps import (
         create_dispersion_map,
         save_map,
         add_facility_markers,
@@ -328,7 +328,7 @@ if FOLIUM_AVAILABLE:
         )
         
         # Convert grid to lat/lon for this wind direction
-        from core.visualization.folium_maps import meters_to_latlon, add_concentration_contour
+        from pyeldqm.core.visualization.folium_maps import meters_to_latlon, add_concentration_contour
         lat_grid_rot, lon_grid_rot = meters_to_latlon(X, Y, latitude, longitude, wind_dir)
         
         # Add contours for this wind direction

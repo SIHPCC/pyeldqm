@@ -30,18 +30,18 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # Imports from pyELDQM
-from core.utils import LiveLoopManager
-from core.utils.features import setup_computational_grid
-from core.utils.zone_extraction import extract_zones
-from core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
-from core.meteorology.realtime_weather import get_weather
-from core.evacuation import (
+from pyeldqm.core.utils import LiveLoopManager
+from pyeldqm.core.utils.features import setup_computational_grid
+from pyeldqm.core.utils.zone_extraction import extract_zones
+from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
+from pyeldqm.core.meteorology.realtime_weather import get_weather
+from pyeldqm.core.evacuation import (
     build_road_graph,
     classify_edges_with_risk,
     shortest_safe_route,
     rank_shelters
 )
-from core.visualization import (
+from pyeldqm.core.visualization import (
     add_evacuation_info_panel,
     ensure_layer_control,
     add_zone_polygons,
@@ -92,7 +92,7 @@ class Scenario:
     SHOW_ALL_ROUTES = True  # Show safe + unsafe roads
 
 
-# extract_zones() is now imported from core.utils.zone_extraction
+# extract_zones() is now imported from pyeldqm.core.utils.zone_extraction
 
 
 def render_roads_and_routes(

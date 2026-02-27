@@ -57,7 +57,7 @@ pyELDQM/
 │   ├── components/
 │   └── layout/
 ├── tests/             # pytest test suite
-├── configs/           # Example YAML scenarios
+├── pyeldqm/configs/           # Example YAML scenarios
 └── data/              # Reference data (not shipped in wheel)
 ```
 
@@ -127,3 +127,4 @@ Please open a GitHub Issue with:
 ---
 
 *Happy modelling!*
+

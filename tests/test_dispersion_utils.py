@@ -3,7 +3,7 @@ Tests for core.dispersion_models.dispersion_utils
 """
 import pytest
 import numpy as np
-from core.dispersion_models.dispersion_utils import (
+from pyeldqm.core.dispersion_models.dispersion_utils import (
     sigma_x,
     sigma_y,
     sigma_z,

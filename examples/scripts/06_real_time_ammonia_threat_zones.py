@@ -35,14 +35,14 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # pyELDQM imports
-from core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
-from core.meteorology.realtime_weather import get_weather
-from core.geography import get_complete_geographic_info
-from core.visualization.folium_maps import create_live_threat_map
-from core.visualization.info_panels import add_threat_zones_info_panel
-from core.utils.features import setup_computational_grid
-from core.utils.zone_extraction import extract_zones
-from core.utils import LiveLoopManager
+from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
+from pyeldqm.core.meteorology.realtime_weather import get_weather
+from pyeldqm.core.geography import get_complete_geographic_info
+from pyeldqm.core.visualization.folium_maps import create_live_threat_map
+from pyeldqm.core.visualization.info_panels import add_threat_zones_info_panel
+from pyeldqm.core.utils.features import setup_computational_grid
+from pyeldqm.core.utils.zone_extraction import extract_zones
+from pyeldqm.core.utils import LiveLoopManager
 
 # ============================================================================
 # CONFIGURATION PARAMETERS

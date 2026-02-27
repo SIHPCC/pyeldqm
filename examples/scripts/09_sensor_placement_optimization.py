@@ -43,19 +43,19 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # pyELDQM imports
-from core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
-from core.meteorology.realtime_weather import get_weather
-from core.geography import get_complete_geographic_info
-from core.visualization.folium_maps import create_live_threat_map
-from core.visualization import (
+from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
+from pyeldqm.core.meteorology.realtime_weather import get_weather
+from pyeldqm.core.geography import get_complete_geographic_info
+from pyeldqm.core.visualization.folium_maps import create_live_threat_map
+from pyeldqm.core.visualization import (
     add_zone_polygons,
     ensure_layer_control,
     add_sensor_optimization_panel,
     fit_map_to_polygons,
 )
-from core.utils.features import setup_computational_grid
-from core.utils.sensor_optimization import SensorPlacementOptimizer, calculate_coverage_metrics
-from core.utils.zone_extraction import extract_zones
+from pyeldqm.core.utils.features import setup_computational_grid
+from pyeldqm.core.utils.sensor_optimization import SensorPlacementOptimizer, calculate_coverage_metrics
+from pyeldqm.core.utils.zone_extraction import extract_zones
 
 
 # ============================================================================
@@ -117,7 +117,7 @@ class ScenarioConfig:
 # THREAT ZONE EXTRACTION
 # ============================================================================
 
-    # extract_threat_zones_from_concentration now imported from core.utils.zone_extraction
+    # extract_threat_zones_from_concentration now imported from pyeldqm.core.utils.zone_extraction
 
     # return threat_zones
 

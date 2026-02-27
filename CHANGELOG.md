@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.1] — 2026-02-27
+## [0.1.2] — 2026-02-27
 
 ### Added
 - About tab (`ℹ️ About`) as the seventh main tab — professional & industrial-grade
@@ -94,6 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `coverage = n / max_sensors` placeholder in `sensor_optimization.py` replaced
   with a proper coverage fraction based on placed sensor count.
 
-[Unreleased]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.0...v0.1.1
+[Unreleased]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.0...v0.1.2
 [0.1.0]: https://github.com/SIHPCC/pyeldqm/releases/tag/v0.1.0

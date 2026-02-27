@@ -3,7 +3,7 @@ Tests for core.utils.geo_constants
 """
 import math
 import pytest
-from core.utils.geo_constants import (
+from pyeldqm.core.utils.geo_constants import (
     METERS_PER_DEGREE_LAT,
     m_to_deg_lat,
     m_to_deg_lon,

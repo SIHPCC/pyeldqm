@@ -1,5 +1,5 @@
 import numpy as np
-from core.consequences import toxic_aegl_zones
+from pyeldqm.core.consequences import toxic_aegl_zones
 
 def test_toxic_aegl_zones():
     x = np.linspace(0, 1000, 50)

@@ -27,19 +27,19 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 # pyELDQM imports
-from core.utils import LiveLoopManager
-from core.utils.features import setup_computational_grid
-from core.utils.zone_extraction import extract_zones, parse_threshold
-from core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
-from core.meteorology.realtime_weather import get_weather
-from core.health_thresholds import (
+from pyeldqm.core.utils import LiveLoopManager
+from pyeldqm.core.utils.features import setup_computational_grid
+from pyeldqm.core.utils.zone_extraction import extract_zones, parse_threshold
+from pyeldqm.core.dispersion_models.gaussian_model import calculate_gaussian_dispersion
+from pyeldqm.core.meteorology.realtime_weather import get_weather
+from pyeldqm.core.health_thresholds import (
     get_aegl_thresholds,
     get_erpg_thresholds,
     get_pac_thresholds,
     get_idlh_threshold,
     display_thresholds
 )
-from core.visualization import add_health_thresholds_panel, ensure_layer_control, add_zone_polygons, fit_map_to_polygons
+from pyeldqm.core.visualization import add_health_thresholds_panel, ensure_layer_control, add_zone_polygons, fit_map_to_polygons
 
 
 class Config:
@@ -76,7 +76,7 @@ class Config:
     UPDATE_INTERVAL_SECONDS = 60  # Time between updates
 
 
-# Note: extract_zones() is now imported from core.utils.zone_extraction
+# Note: extract_zones() is now imported from pyeldqm.core.utils.zone_extraction
 # This is the universal implementation used across all examples
 
 

@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 # =============================================================================
 [project]
 name = "pyeldqm"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python-based real-time emergency leakage and dispersion quantification model"
 readme = "README.md"
 license = { text = "MIT" }
@@ -78,8 +78,8 @@ Issues   = "https://github.com/SIHPCC/pyeldqm/issues"
 # Package discovery
 # =============================================================================
 [tool.setuptools.packages.find]
-include  = ["core*", "app*", "data*"]
-exclude  = ["tests*", "examples*", "validation*"]
+include  = ["pyeldqm*", "core*", "app*", "data*", "validation*"]
+exclude  = ["tests*", "examples*"]
 
 [tool.setuptools]
 py-modules = ["run_app", "main"]

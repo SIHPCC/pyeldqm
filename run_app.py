@@ -18,7 +18,7 @@ _ROOT = os.path.dirname(os.path.abspath(__file__))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from app.server import app  # noqa: E402 — intentional late import after path setup
+from pyeldqm.app.server import app  # noqa: E402 — intentional late import after path setup
 
 
 def main() -> None:

@@ -16,10 +16,10 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from core.chemical_database import ChemicalDatabase
+from pyeldqm.core.chemical_database import ChemicalDatabase
 
 try:
-    from core.chemical_dataframe import ChemicalDataFrame
+    from pyeldqm.core.chemical_dataframe import ChemicalDataFrame
     HAS_PANDAS = True
 except ImportError:
     HAS_PANDAS = False

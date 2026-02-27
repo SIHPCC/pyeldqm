@@ -1,20 +1,23 @@
 # Include YAML scenario configurations
-recursive-include configs *.yaml
+recursive-include pyeldqm/configs *.yaml
 
 # Include Dash CSS assets and images
-recursive-include app/assets *.css *.png *.jpg *.jpeg *.svg *.ico
+recursive-include pyeldqm/app/assets *.css *.png *.jpg *.jpeg *.svg *.ico
 
 # Include chemicals database (required at runtime)
-include data/chemicals_database/chemicals_database.sqlite3
-include data/__init__.py
-include data/chemicals_database/__init__.py
+include pyeldqm/data/chemicals_database/chemicals_database.sqlite3
+include pyeldqm/data/__init__.py
+include pyeldqm/data/chemicals_database/__init__.py
 
 # Exclude large / generated content
 exclude outputs
 prune  outputs
 prune  cache
-prune  data/aloha_cases
-prune  data/geographic_data
-prune  data/population
-prune  data/thermodynamics_data
-prune  data/weather_samples
+prune  pyeldqm/data/aloha_cases
+prune  pyeldqm/data/geographic_data
+prune  pyeldqm/data/population
+prune  pyeldqm/data/thermodynamics_data
+prune  pyeldqm/data/weather_samples
+
+
+

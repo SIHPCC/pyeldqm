@@ -4,14 +4,14 @@ Tests for core.meteorology — wind profile and stability utilities.
 import math
 import datetime
 import pytest
-from core.meteorology.wind_profile import (
+from pyeldqm.core.meteorology.wind_profile import (
     obukhov_length,
     psi_zeta,
     stability_exponent,
     friction_velocity,
     wind_speed,
 )
-from core.meteorology.stability import get_stability_class
+from pyeldqm.core.meteorology.stability import get_stability_class
 
 
 # ---------------------------------------------------------------------------
