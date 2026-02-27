@@ -12,6 +12,7 @@ def register(app):
     from ..components.tabs.sensor_placement import create_sensor_placement_content
     from ..components.tabs.health_impact import create_health_impact_content
     from ..components.tabs.shelter_analysis import create_shelter_analysis_content
+    from ..components.tabs.about import create_about_content
     import dash_bootstrap_components as dbc
 
     @app.callback(
@@ -78,6 +79,9 @@ def register(app):
                 ),
                 create_shelter_analysis_content(),
             ])
+
+        elif active_tab == "tab-about":
+            return dbc.Row([create_about_content()])
 
         # Default fallback
         return html.Div([

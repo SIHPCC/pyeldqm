@@ -11,6 +11,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] — 2026-02-27
+
+### Added
+- About tab (`ℹ️ About`) as the seventh main tab — professional & industrial-grade
+  information panel covering capabilities, dispersion models, standards compliance,
+  technology stack, and contributor profiles.
+- Principal Investigator profile for Dr. Zohaib Atiq Khan (Assistant Professor,
+  Dept. of Chemical, Polymer & Composite Materials Engineering, UET Lahore)
+  including HPC Centre and SIHPCC details.
+- Version, licence, Python compatibility, and open-source badges in both the
+  main application header and the About tab hero banner.
+- "View on GitHub" button added to the main header (links to SIHPCC/pyeldqm).
+- PNG/image assets (`*.png`, `*.jpg`, `*.svg`, `*.ico`) included in
+  `pyproject.toml` package-data and `MANIFEST.in` so the pyELDQM logo is
+  correctly bundled on `pip install`.
+- Scrollable tab bar with `overflow-x: auto` wrapper and `flex-wrap: nowrap`
+  CSS so all seven tabs remain accessible at any viewport width.
+
+### Changed
+- Main header background updated to a dark-to-blue gradient
+  (`#1a2a3a → #1f3a5f → #1f77b4`) matching the About hero banner.
+- `requires-python` updated to `>=3.9,<3.15`; Python 3.13 and 3.14
+  classifiers added.
+- Tab labels shortened for better fit in the navigation bar.
+
+### Fixed
+- Logo (`pyELDQM_logo_v0.1.png`) not appearing after `pip install -e .` because
+  image files were excluded from package-data.
+
+---
+
 ## [0.1.0] — 2026-02-01
 
 ### Added
@@ -63,5 +94,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `coverage = n / max_sensors` placeholder in `sensor_optimization.py` replaced
   with a proper coverage fraction based on placed sensor count.
 
-[Unreleased]: https://github.com/your-org/pyeldqm/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-org/pyeldqm/releases/tag/v0.1.0
+[Unreleased]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/SIHPCC/pyeldqm/releases/tag/v0.1.0

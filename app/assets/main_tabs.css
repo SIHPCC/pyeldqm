@@ -3,3 +3,15 @@
 #main-tabs .nav-link[aria-selected="true"] {
     color: #000000 !important;
 }
+
+/* Prevent tab bar from wrapping so all 7 tabs stay on one scrollable row */
+#main-tabs {
+    flex-wrap: nowrap !important;
+    white-space: nowrap;
+}
+
+#main-tabs .nav-link {
+    white-space: nowrap;
+    padding: 0.5rem 0.85rem !important;
+    font-size: 1rem !important;
+}

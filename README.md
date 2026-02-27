@@ -60,7 +60,7 @@ pip install pyeldqm
 
 ```bash
 # 1. Create and activate a conda environment
-conda create -n pyeldqm python=3.10
+conda create -n pyeldqm python=3.14
 conda activate pyeldqm
 
 # 2a. Install published release from PyPI
