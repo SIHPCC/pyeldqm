@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 # =============================================================================
 [project]
 name = "pyeldqm"
-version = "0.1.2"
+version = "0.1.3"
 description = "Python-based real-time emergency leakage and dispersion quantification model"
 readme = "README.md"
 license = { text = "MIT" }

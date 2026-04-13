@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.3] — 2026-04-13
+
+### Added
+- Windows executable distribution guidance in README, including standalone usage notes.
+- Step-by-step VS Code setup screenshots for installation and dashboard launch.
+- Build helper script (`build_exe.ps1`) for repeatable local executable packaging.
+
+### Changed
+- Packaging configuration hardened for frozen executable use:
+  - executable icon set from app favicon,
+  - robust hidden-import/data collection for routing and geospatial stacks,
+  - runtime hook for GDAL/PROJ path setup.
+- Dash assets path resolution made frozen-aware for executable mode.
+
+### Fixed
+- Cross-tab parameter snapshot behavior for threat-parameter reuse in secondary tabs.
+- Consistent map source markers and compass rendering across Route, Sensor, Health, and Shelter tabs.
+- Improved diagnostics when optional `osmnx`/`networkx` imports fail at runtime.
+
+---
+
 ## [0.1.2] — 2026-02-27
 
 ### Added
@@ -94,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `coverage = n / max_sensors` placeholder in `sensor_optimization.py` replaced
   with a proper coverage fraction based on placed sensor count.
 
-[Unreleased]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/SIHPCC/pyeldqm/compare/v0.1.0...v0.1.2
 [0.1.0]: https://github.com/SIHPCC/pyeldqm/releases/tag/v0.1.0
