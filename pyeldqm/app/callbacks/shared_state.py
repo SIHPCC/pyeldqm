@@ -198,7 +198,10 @@ def snapshot_threat_params_before_par_edit(
 ):
     if active_tab != "tab-par-analysis":
         return dash.no_update
-    if par_mode not in ["par", "threat"]:
+    # Snapshot only when entering PAR-specific mode.
+    # Avoid overwriting the stored Threat-Zones snapshot with default sidebar
+    # values when the tab is opened in "threat" mode.
+    if par_mode != "par":
         return dash.no_update
     return _build_params_dict(
         release_type, chemical, source_term_mode, terrain_roughness, receptor_height_m,
@@ -220,7 +223,8 @@ def snapshot_threat_params_before_route_edit(
 ):
     if active_tab != "tab-route-optimization":
         return dash.no_update
-    if route_mode not in ["route", "threat"]:
+    # Snapshot only when entering route-specific mode.
+    if route_mode != "route":
         return dash.no_update
     return _build_params_dict(
         release_type, chemical, source_term_mode, terrain_roughness, receptor_height_m,
@@ -242,7 +246,8 @@ def snapshot_threat_params_before_sensor_edit(
 ):
     if active_tab != "tab-sensor-placement":
         return dash.no_update
-    if sensor_mode not in ["sensor", "threat"]:
+    # Snapshot only when entering sensor-specific mode.
+    if sensor_mode != "sensor":
         return dash.no_update
     return _build_params_dict(
         release_type, chemical, source_term_mode, terrain_roughness, receptor_height_m,
@@ -264,7 +269,8 @@ def snapshot_threat_params_before_shelter_edit(
 ):
     if active_tab != "tab-shelter-analysis":
         return dash.no_update
-    if shelter_mode not in ["shelter", "threat"]:
+    # Snapshot only when entering shelter-specific mode.
+    if shelter_mode != "shelter":
         return dash.no_update
     return _build_params_dict(
         release_type, chemical, source_term_mode, terrain_roughness, receptor_height_m,

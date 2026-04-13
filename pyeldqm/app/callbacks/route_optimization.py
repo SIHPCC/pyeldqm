@@ -218,6 +218,7 @@ def calculate_route_optimization(
         from .threat_zones import calculate_threat_zones
         from pyeldqm.core.utils.zone_extraction import extract_zones
         from pyeldqm.core.visualization import add_zone_polygons, ensure_layer_control, fit_map_to_polygons
+        from pyeldqm.core.visualization.folium_maps import add_facility_markers, add_compass
         from pyeldqm.core.evacuation import build_road_graph, classify_edges_with_risk, rank_shelters
 
         map_component, _, status, _, _, _, _, concentration_data, _ = calculate_threat_zones(
@@ -245,15 +246,30 @@ def calculate_route_optimization(
         if release_type == "single":
             center_lat = lat if lat is not None else 31.6911
             center_lon = lon if lon is not None else 74.0822
-            source_points = [(center_lat, center_lon, "Source")]
+            resolved_sources = [{
+                "lat": center_lat,
+                "lon": center_lon,
+                "name": "Release Source",
+                "type": "industrial",
+            }]
         else:
             center_lat = float(np.mean(multi_lats)) if multi_lats else 31.6911
             center_lon = float(np.mean(multi_lons)) if multi_lons else 74.0822
-            source_points = [
-                (mlat, mlon, f"Source {i + 1}")
+            resolved_sources = [
+                {
+                    "lat": mlat,
+                    "lon": mlon,
+                    "name": f"Source {i + 1}",
+                    "type": "industrial",
+                }
                 for i, (mlat, mlon) in enumerate(zip(multi_lats or [], multi_lons or []))
                 if mlat is not None and mlon is not None
-            ] or [(center_lat, center_lon, "Source")]
+            ] or [{
+                "lat": center_lat,
+                "lon": center_lon,
+                "name": "Release Source",
+                "type": "industrial",
+            }]
 
         threat_zones = extract_zones(X, Y, concentration, thresholds, center_lat, center_lon, wind_dir=wind_dir_local)
 
@@ -294,9 +310,7 @@ def calculate_route_optimization(
             attr="Esri", name="Satellite", overlay=False, control=True,
         ).add_to(m)
 
-        for sp_lat, sp_lon, sp_name in source_points:
-            folium.Marker([sp_lat, sp_lon], tooltip=sp_name,
-                          icon=folium.Icon(color="red", icon="warning-sign")).add_to(m)
+        add_facility_markers(m, resolved_sources, group_name="Release Sources")
 
         add_zone_polygons(
             m,
@@ -337,6 +351,7 @@ def calculate_route_optimization(
 
         _render_route_layers(m, G, safe_gdf, unsafe_gdf,
                              best.get("path") if best else None, show_unsafe=show_unsafe)
+        add_compass(m, position="topleft", wind_direction=wind_dir_local)
         ensure_layer_control(m)
 
         route_map = html.Iframe(

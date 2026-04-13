@@ -24,6 +24,14 @@ outputs/
 cache/
 *.log
 
+# PyInstaller build artifacts — exe files and work/dist folders
+*.exe
+pyELDQM_exe/
+dist_exe/
+dist_new/
+build_exe/
+build/
+
 # Large GIS / raster & geospatial binary data
 # (download separately — see data/population/download_worldpop_and_clip.py)
 *.tif

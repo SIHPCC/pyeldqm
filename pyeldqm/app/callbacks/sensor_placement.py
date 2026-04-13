@@ -150,6 +150,7 @@ def optimize_sensors(
         from .threat_zones import calculate_threat_zones
         from pyeldqm.core.utils.zone_extraction import extract_zones
         from pyeldqm.core.visualization import add_zone_polygons, ensure_layer_control, fit_map_to_polygons
+        from pyeldqm.core.visualization.folium_maps import add_facility_markers, add_compass
         from pyeldqm.core.utils.sensor_optimization import SensorPlacementOptimizer
 
         (map_component, _, status, _, _, _, _, concentration_data, _) = calculate_threat_zones(
@@ -177,9 +178,30 @@ def optimize_sensors(
         if release_type == "single":
             center_lat = lat if lat is not None else 31.6911
             center_lon = lon if lon is not None else 74.0822
+            resolved_sources = [{
+                "lat": center_lat,
+                "lon": center_lon,
+                "name": "Release Source",
+                "type": "industrial",
+            }]
         else:
             center_lat = float(np.mean(multi_lats)) if multi_lats else 31.6911
             center_lon = float(np.mean(multi_lons)) if multi_lons else 74.0822
+            resolved_sources = [
+                {
+                    "lat": mlat,
+                    "lon": mlon,
+                    "name": f"Source {i + 1}",
+                    "type": "industrial",
+                }
+                for i, (mlat, mlon) in enumerate(zip(multi_lats or [], multi_lons or []))
+                if mlat is not None and mlon is not None
+            ] or [{
+                "lat": center_lat,
+                "lon": center_lon,
+                "name": "Release Source",
+                "type": "industrial",
+            }]
 
         threat_zones = extract_zones(X, Y, concentration, thresholds, center_lat, center_lon,
                                      wind_dir=wind_dir_local)
@@ -219,8 +241,7 @@ def optimize_sensors(
             attr="Esri", name="Satellite", overlay=False, control=True,
         ).add_to(m)
 
-        folium.Marker([center_lat, center_lon], tooltip="Release Source",
-                      icon=folium.Icon(color="red", icon="warning-sign")).add_to(m)
+        add_facility_markers(m, resolved_sources, group_name="Release Sources")
 
         add_zone_polygons(
             m,
@@ -249,6 +270,7 @@ def optimize_sensors(
                 weight=1, tooltip=f"Sensor {i} detection range",
             ).add_to(sensor_fg)
         sensor_fg.add_to(m)
+        add_compass(m, position="topleft", wind_direction=wind_dir_local)
         ensure_layer_control(m)
 
         metrics = optimizer.calculate_coverage_metrics(sensors, threat_zones)

@@ -23,11 +23,13 @@ from ..utils.geo_constants import METERS_PER_DEGREE_LAT
 try:
     import osmnx as ox
     import networkx as nx
-except Exception:
+    _IMPORT_ERROR = None
+except Exception as exc:
     ox = None
     nx = None
+    _IMPORT_ERROR = exc
     warnings.warn(
-        "osmnx/networkx not found. Install with: pip install osmnx networkx",
+        f"osmnx/networkx import failed: {exc}",
         RuntimeWarning
     )
 
@@ -40,6 +42,8 @@ HAZARD_PENALTY = {
 
 def _ensure_libs():
     if ox is None or nx is None:
+        if _IMPORT_ERROR is not None:
+            raise ImportError(f"Requires osmnx/networkx. Root cause: {_IMPORT_ERROR}")
         raise ImportError("Requires osmnx and networkx. Install with: pip install osmnx networkx")
 
 

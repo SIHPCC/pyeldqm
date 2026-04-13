@@ -105,6 +105,90 @@ Environment variables (all optional):
 | `HOST` | `localhost` | Bind address |
 | `DEBUG` | `true` | Dash debug mode |
 
+### Step-by-step setup and launch (VS Code)
+
+The screenshots below show the full workflow from a clean PC to a running dashboard.
+
+**Step 1 — Install the Python extension in VS Code**
+
+Open VS Code, go to the Extensions marketplace, search for **Python** (by Microsoft), and click **Install**.
+
+![Step 1 – Install Python extension](docs/images/setup_step1_install_python.png)
+
+---
+
+**Step 2 — Open a terminal**
+
+In VS Code go to **Terminal → New Terminal** (or press `Ctrl+Shift+`\`).
+
+![Step 2 – Open terminal](docs/images/setup_step2_open_terminal.png)
+
+---
+
+**Step 3 — Create a virtual environment and install pyELDQM**
+
+```cmd
+python -m venv env
+env\Scripts\activate
+pip install pyeldqm
+```
+
+![Step 3 – Create environment and install](docs/images/setup_step3_install_pyeldqm.png)
+
+---
+
+**Step 4 — Launch the dashboard**
+
+```cmd
+pyeldqm-app
+```
+
+The terminal will print the local URL (e.g. `http://localhost:8050`).
+
+![Step 4 – Run pyeldqm-app](docs/images/setup_step4_run_app.png)
+
+---
+
+**Step 5 — Open the dashboard in your browser**
+
+Navigate to the URL printed in the terminal. The pyELDQM dashboard opens with the **Chemical Threat Zones** tab active.
+
+![Step 5 – Dashboard](docs/images/setup_step5_dashboard.png)
+
+---
+
+> **Save the screenshots:** Place the five images from the guide above in `docs/images/` using these exact filenames:
+> `setup_step1_install_python.png`, `setup_step2_open_terminal.png`, `setup_step3_install_pyeldqm.png`,
+> `setup_step4_run_app.png`, `setup_step5_dashboard.png`.
+
+---
+
+### Run on Windows using the executable (.exe)
+
+If you use the packaged one-file build (for example `pyELDQM.exe`), you can run the app without creating a Python environment on the target PC.
+
+#### Can I copy only the .exe file?
+
+Yes. For the one-file PyInstaller build, you can copy only `pyELDQM.exe` to another Windows 64-bit PC and run it.
+
+#### Requirements on the target PC
+
+- Windows 64-bit (same architecture as build machine)
+- Internet connection for Emergency Route optimization (OpenStreetMap network download)
+- Any user input datasets you choose at runtime (for example GeoTIFF population raster files)
+- Microsoft Visual C++ runtime may be required on some systems
+
+#### How to run
+
+1. Copy `pyELDQM.exe` to the target PC.
+2. Double-click `pyELDQM.exe`.
+3. Open the shown local URL in a browser (typically http://localhost:8050).
+
+#### Notes
+
+- First launch can be slower because one-file executables extract temporary runtime files.
+- If port 8050 is busy, set the `PORT` environment variable before launching.
+
 ### Python API
 
 ```python
