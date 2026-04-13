@@ -97,7 +97,7 @@ def create_about_content():
                             "marginBottom": "0.45rem", "letterSpacing": "0.3px",
                         }),
                         html.Div([
-                            dbc.Badge("v 0.1.2", color="light", text_color="dark", className="me-2"),
+                            dbc.Badge("v 0.1.3", color="light", text_color="dark", className="me-2"),
                             dbc.Badge("MIT License", color="success", className="me-2"),
                             dbc.Badge("Python ≥ 3.10", color="info", text_color="dark", className="me-2"),
                             dbc.Badge("Open Source", color="warning", text_color="dark"),
