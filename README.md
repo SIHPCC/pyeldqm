@@ -167,6 +167,11 @@ Navigate to the URL printed in the terminal. The pyELDQM dashboard opens with th
 
 If you use the packaged one-file build (for example `pyELDQM.exe`), you can run the app without creating a Python environment on the target PC.
 
+**Download:** The latest packaged Windows executable is intended to be distributed through GitHub Releases:
+
+- Latest release page: https://github.com/SIHPCC/pyeldqm/releases/latest
+- All releases: https://github.com/SIHPCC/pyeldqm/releases
+
 #### Can I copy only the .exe file?
 
 Yes. For the one-file PyInstaller build, you can copy only `pyELDQM.exe` to another Windows 64-bit PC and run it.
